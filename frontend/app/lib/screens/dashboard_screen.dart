@@ -4,6 +4,7 @@ import '../theme/text_styles.dart';
 import '../services/storage_service.dart';
 import '../services/jwt_helper.dart';
 import '../services/permission_service.dart';
+import '../services/token_storage.dart';
 import 'url_analysis_screen.dart';
 import 'sms_analysis_screen.dart';
 import 'transaction_analysis_screen.dart';
@@ -13,12 +14,12 @@ import '../widgets/action_card.dart';
 import '../widgets/alert_list_item.dart';
 
 class DashboardScreen extends StatefulWidget {
-  final String? jwtToken;
+  final String jwtToken; // Now required
   final String? baseUrl;
 
   const DashboardScreen({
     super.key,
-    this.jwtToken,
+    required this.jwtToken, // Make it required
     this.baseUrl = 'http://localhost:8000',
   });
 
@@ -42,9 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadData() async {
     final alerts = await StorageService.getAlerts();
-    final payload = widget.jwtToken != null
-        ? JwtHelper.parsePayload(widget.jwtToken!)
-        : null;
+    final payload = JwtHelper.parsePayload(widget.jwtToken);
 
     // Calculate stats
     int totalScans = alerts.length;
@@ -70,6 +69,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _clearAlerts() async {
     await StorageService.clearAlerts();
     await _loadData();
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Logout', style: TextStyle(color: AppColors.text)),
+        content: Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Logout', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      // Clear tokens
+      await TokenStorage.clearAll();
+
+      // Navigate to login screen
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    }
   }
 
   @override
@@ -138,6 +176,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onPressed: () async {
             await _clearAlerts();
           },
+        ),
+        IconButton(
+          icon: Icon(Icons.logout, color: AppColors.error),
+          onPressed: _handleLogout,
+          tooltip: 'Logout',
         ),
       ],
     );
@@ -466,7 +509,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => UrlAnalysisScreen(
-              jwt: widget.jwtToken ?? '',
+              jwt: widget.jwtToken,
               baseUrl: widget.baseUrl ?? 'http://localhost:8000',
             ),
           ),
@@ -555,7 +598,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildQuickActions() {
     final baseUrl = widget.baseUrl ?? 'http://localhost:8000';
-    final jwt = widget.jwtToken ?? '';
+    final jwt = widget.jwtToken;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

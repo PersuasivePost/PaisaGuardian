@@ -47,6 +47,9 @@ dependencies:
   connectivity_plus: ^5.0.1
   pull_to_refresh: ^2.0.0
   google_fonts: ^5.0.0
+  flutter_secure_storage: ^9.0.0
+  webview_flutter: ^4.4.2
+  google_sign_in: ^6.1.5
 
 dev_dependencies:
   flutter_test:
