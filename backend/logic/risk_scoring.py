@@ -36,6 +36,42 @@ SMS_FRAUD_KEYWORDS = [
     'free gift', 'cashback', 'reward points', 'kyc', 'update required'
 ]
 
+# Fake KYC SMS patterns (more specific)
+FAKE_KYC_PATTERNS = [
+    r'kyc.*updat',
+    r'kyc.*expir',
+    r'kyc.*pending',
+    r'kyc.*verify',
+    r'kyc.*complet',
+    r'update.*kyc',
+    r'verify.*kyc',
+    r'complete.*kyc',
+    r'kyc.*link',
+    r'kyc.*click',
+    r'kyc.*suspend',
+    r'kyc.*block',
+    r'kyc.*deadline',
+    r'ekyc.*requir',
+    r're-kyc',
+]
+
+# Phishing website indicators (advanced)
+PHISHING_DOMAIN_KEYWORDS = [
+    'verify', 'secure', 'update', 'confirm', 'account', 'login',
+    'signin', 'bank', 'payment', 'wallet', 'support', 'help',
+    'customer', 'service', 'alert', 'urgent', 'suspended',
+    'blocked', 'security', 'authentication', 'validation'
+]
+
+# Typosquatting common targets
+LEGITIMATE_DOMAINS_TYPOSQUATTING = [
+    'paytm.com', 'phonepe.com', 'googlepay.com', 'google.com',
+    'amazonpay.com', 'amazon.in', 'flipkart.com',
+    'sbi.co.in', 'hdfcbank.com', 'icicibank.com', 'axisbank.com',
+    'paytmbank.com', 'kotak.com', 'yesbank.in',
+    'bharatpe.com', 'cred.club', 'mobikwik.com'
+]
+
 UPI_FRAUD_PATTERNS = [
     r'\d{10}@paytm',  # Personal UPI IDs
     r'[a-z]+\d+@',  # Random character + number combinations
@@ -121,6 +157,36 @@ def calculate_url_risk_score(url: str) -> Tuple[float, List[str], Dict]:
             risk_score += 10
             indicators.append("Unusually long URL")
         
+        # Advanced phishing detection: Check for phishing keywords in domain
+        phishing_keyword_count = sum(1 for keyword in PHISHING_DOMAIN_KEYWORDS if keyword in domain)
+        if phishing_keyword_count >= 2:
+            risk_score += 30
+            indicators.append(f"Phishing keywords in domain ({phishing_keyword_count} matches)")
+        elif phishing_keyword_count == 1:
+            risk_score += 15
+            indicators.append("Phishing keyword in domain")
+        
+        # Typosquatting detection using edit distance
+        typosquat_result = detect_typosquatting(domain)
+        if typosquat_result['is_typosquatting']:
+            risk_score += 50
+            indicators.append(f"⚠️ Typosquatting: Looks like '{typosquat_result['similar_to']}' (similarity: {typosquat_result['similarity']:.0%})")
+            details['typosquatting_detected'] = True
+            details['similar_to_domain'] = typosquat_result['similar_to']
+            details['typosquatting_similarity'] = typosquat_result['similarity']
+        
+        # Check for homograph attacks (unicode lookalikes)
+        if has_homograph_attack(domain):
+            risk_score += 45
+            indicators.append("⚠️ Homograph attack detected (lookalike characters)")
+        
+        # Fake payment pages: Check path for payment-related terms
+        payment_terms = ['payment', 'pay', 'checkout', 'cart', 'order', 'transaction']
+        if any(term in path or term in query for term in payment_terms):
+            if not is_legitimate:
+                risk_score += 20
+                indicators.append("Fake payment page on suspicious domain")
+        
         details['risk_factors'] = len(indicators)
         
     except Exception as e:
@@ -147,6 +213,14 @@ def calculate_sms_risk_score(message: str, sender: str = None) -> Tuple[float, L
     details = {}
     
     message_lower = message.lower()
+    
+    # Fake KYC SMS Detection
+    is_fake_kyc, kyc_confidence, kyc_warning = analyze_fake_kyc_sms(message)
+    if is_fake_kyc:
+        risk_score += kyc_confidence * 0.8  # Use 80% of confidence as risk score
+        indicators.append(kyc_warning)
+        details['fake_kyc_detected'] = True
+        details['kyc_confidence'] = kyc_confidence
     
     # Extract URLs
     urls = extract_urls_from_text(message)
@@ -317,10 +391,13 @@ def analyze_qr_code(qr_data: str) -> Tuple[float, List[str], Dict]:
     if qr_lower.startswith('upi://') or 'upi:' in qr_lower:
         details['qr_type'] = 'upi_intent'
         
-        # Check for collect requests (more dangerous)
-        if 'collect' in qr_lower:
-            risk_score += 30
-            indicators.append("UPI collect request in QR code (requests money from you)")
+        # FAKE COLLECT REQUEST DETECTION (High Priority)
+        is_collect, collect_warning = analyze_fake_collect_request(qr_data)
+        if is_collect:
+            risk_score += 70
+            indicators.append(collect_warning)
+            details['is_collect_request'] = True
+            details['critical_warning'] = collect_warning
         
         # Extract UPI parameters
         if 'am=' in qr_lower:
@@ -515,11 +592,13 @@ def analyze_upi_intent(upi_data: Dict) -> Tuple[float, List[str], Dict]:
     intent_type = upi_data.get('intent_type', '')
     details['intent_type'] = intent_type
     
-    # Collect requests are more dangerous
-    if 'collect' in intent_type.lower():
-        risk_score += 30
-        indicators.append("UPI collect request (requests money FROM you)")
-        details['warning'] = "This transaction will deduct money from your account"
+    # FAKE COLLECT REQUEST DETECTION (Critical)
+    is_collect, collect_warning = analyze_fake_collect_request(upi_data)
+    if is_collect:
+        risk_score += 70
+        indicators.append(collect_warning)
+        details['is_collect_request'] = True
+        details['critical_warning'] = collect_warning
     
     # Check amount
     amount = upi_data.get('amount')
@@ -684,3 +763,200 @@ def generate_recommendations(risk_score: float, indicators: List[str], analysis_
         recommendations.append("✅ This appears relatively safe, but stay vigilant")
     
     return recommendations
+
+
+def levenshtein_distance(s1: str, s2: str) -> int:
+    """
+    Calculate Levenshtein distance between two strings
+    Used for typosquatting detection
+    """
+    if len(s1) < len(s2):
+        return levenshtein_distance(s2, s1)
+    
+    if len(s2) == 0:
+        return len(s1)
+    
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+    
+    return previous_row[-1]
+
+
+def detect_typosquatting(domain: str) -> Dict:
+    """
+    Detect typosquatting by comparing domain with legitimate domains
+    
+    Args:
+        domain: Domain to check
+        
+    Returns:
+        Dictionary with typosquatting info
+    """
+    result = {
+        'is_typosquatting': False,
+        'similar_to': None,
+        'similarity': 0.0,
+        'edit_distance': 0
+    }
+    
+    # Remove www. and extract base domain
+    domain = domain.replace('www.', '')
+    
+    # Compare with legitimate domains
+    for legit_domain in LEGITIMATE_DOMAINS_TYPOSQUATTING:
+        distance = levenshtein_distance(domain, legit_domain)
+        max_len = max(len(domain), len(legit_domain))
+        similarity = 1 - (distance / max_len)
+        
+        # If very similar (80%+) but not exact match, it's typosquatting
+        if similarity >= 0.80 and domain != legit_domain:
+            if similarity > result['similarity']:
+                result['is_typosquatting'] = True
+                result['similar_to'] = legit_domain
+                result['similarity'] = similarity
+                result['edit_distance'] = distance
+    
+    # Also check for common typosquatting techniques
+    if not result['is_typosquatting']:
+        for legit_domain in LEGITIMATE_DOMAINS_TYPOSQUATTING:
+            base = legit_domain.split('.')[0]
+            
+            # Character substitution (paytrn, paytm)
+            if base in domain or domain in base:
+                if domain != legit_domain:
+                    result['is_typosquatting'] = True
+                    result['similar_to'] = legit_domain
+                    result['similarity'] = 0.85
+                    break
+            
+            # Hyphen addition (pay-tm.com)
+            if base.replace('-', '') in domain.replace('-', ''):
+                if domain != legit_domain:
+                    result['is_typosquatting'] = True
+                    result['similar_to'] = legit_domain
+                    result['similarity'] = 0.85
+                    break
+    
+    return result
+
+
+def has_homograph_attack(domain: str) -> bool:
+    """
+    Detect homograph attacks (unicode characters that look like ASCII)
+    
+    Args:
+        domain: Domain to check
+        
+    Returns:
+        True if homograph attack detected
+    """
+    # Common homograph pairs
+    homograph_pairs = {
+        'a': ['а', 'ạ', 'ă', 'ā'],  # Cyrillic and Latin variants
+        'e': ['е', 'ē', 'ė', 'ę'],
+        'o': ['о', 'ọ', 'ō', 'ő'],
+        'p': ['р', 'ṗ'],
+        'c': ['с', 'ċ', 'ć'],
+        'x': ['х', 'ẋ'],
+        'y': ['у', 'ȳ', 'ý'],
+        'i': ['і', 'ı', 'ị'],
+        'm': ['м', 'ṁ'],
+        'n': ['п', 'ń', 'ň'],
+    }
+    
+    # Check if domain contains any lookalike characters
+    for char in domain:
+        for ascii_char, lookalikes in homograph_pairs.items():
+            if char in lookalikes:
+                return True
+    
+    # Check for mixed script usage (ASCII + Cyrillic, etc.)
+    has_ascii = any(ord(c) < 128 for c in domain)
+    has_unicode = any(ord(c) >= 128 for c in domain)
+    
+    if has_ascii and has_unicode:
+        return True
+    
+    return False
+
+
+def analyze_fake_collect_request(upi_data: str) -> Tuple[bool, str]:
+    """
+    Specifically detect fake collect requests in UPI data
+    
+    Args:
+        upi_data: UPI intent string or data
+        
+    Returns:
+        Tuple of (is_collect_request, warning_message)
+    """
+    upi_lower = str(upi_data).lower()
+    
+    # Check for collect request indicators
+    is_collect = any([
+        'collect' in upi_lower,
+        'mode=02' in upi_lower,  # UPI mode 02 is collect
+        'mode=collect' in upi_lower,
+    ])
+    
+    if is_collect:
+        warning = (
+            "🚨 DANGER: This is a COLLECT REQUEST! "
+            "Money will be DEDUCTED from YOUR account, not sent to someone. "
+            "Scammers use fake collect QR codes to steal money. DO NOT APPROVE!"
+        )
+        return True, warning
+    
+    return False, ""
+
+
+def analyze_fake_kyc_sms(message: str) -> Tuple[bool, int, str]:
+    """
+    Specifically detect fake KYC SMS scams
+    
+    Args:
+        message: SMS message content
+        
+    Returns:
+        Tuple of (is_fake_kyc, confidence_score, warning_message)
+    """
+    message_lower = message.lower()
+    
+    # Count KYC pattern matches
+    pattern_matches = sum(1 for pattern in FAKE_KYC_PATTERNS if re.search(pattern, message_lower))
+    
+    if pattern_matches > 0:
+        # Check for additional red flags
+        red_flags = []
+        
+        if any(url in message_lower for url in ['bit.ly', 'tinyurl', 'goo.gl']):
+            red_flags.append("shortened URL")
+        
+        if re.search(r'\d{10}', message):  # Contains phone number
+            red_flags.append("phone number")
+        
+        if any(word in message_lower for word in ['urgent', 'immediately', 'expire', 'block', 'suspend']):
+            red_flags.append("urgency tactics")
+        
+        if any(word in message_lower for word in ['click', 'link', 'download', 'install']):
+            red_flags.append("action request")
+        
+        confidence = min((pattern_matches * 25) + (len(red_flags) * 15), 100)
+        
+        warning = (
+            f"🚨 FAKE KYC SCAM DETECTED (Confidence: {confidence}%)! "
+            f"Banks NEVER ask you to update KYC via SMS links. "
+            f"Visit your bank branch or official app directly. "
+            f"Red flags: {', '.join(red_flags) if red_flags else 'KYC keywords'}"
+        )
+        
+        return True, confidence, warning
+    
+    return False, 0, ""

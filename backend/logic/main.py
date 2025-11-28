@@ -43,7 +43,10 @@ from risk_scoring import (
     analyze_html_content,
     analyze_redirect_chain,
     analyze_upi_intent,
-    analyze_device_security
+    analyze_device_security,
+    detect_typosquatting,
+    analyze_fake_collect_request,
+    analyze_fake_kyc_sms
 )
 
 # Import all 5 agentic layers
@@ -51,6 +54,9 @@ from agent_policy import get_agent_goal, classify_and_act
 from ml_reasoning import reasoning_engine
 from action_engine import action_engine, ActionContext, Platform, ThreatType
 from learning_engine import learning_engine, FeedbackType
+
+# Import payee database for new payee detection
+from payee_database import payee_db
 
 # Configure logging
 logging.basicConfig(
@@ -578,6 +584,10 @@ async def analyze_transaction(
             f"₹{request.transaction.amount} to {request.transaction.recipient_upi}"
         )
         
+        # Check if this is a new payee using local database
+        is_new_payee = payee_db.is_new_payee(user.user_id, request.transaction.recipient_upi)
+        payee_info = payee_db.get_payee_info(user.user_id, request.transaction.recipient_upi)
+        
         # Calculate risk score
         risk_score, indicators, details = calculate_transaction_risk_score(
             request.transaction.amount,
@@ -585,6 +595,36 @@ async def analyze_transaction(
             request.transaction.recipient_name,
             request.transaction.transaction_note
         )
+        
+        # NEW PAYEE DETECTION - Add risk for unknown recipients
+        if is_new_payee:
+            risk_score += 25
+            indicators.append("⚠️ NEW PAYEE: First time sending money to this UPI ID")
+            details['is_new_payee'] = True
+            
+            # Higher risk for new payee + large amount
+            if request.transaction.amount > 5000:
+                risk_score += 15
+                indicators.append("🚨 High-risk: Large amount to NEW recipient")
+        else:
+            # Known payee - check for anomalies
+            details['is_new_payee'] = False
+            details['payee_info'] = {
+                'transaction_count': payee_info['transaction_count'],
+                'average_amount': payee_info['average_amount'],
+                'is_trusted': payee_info['is_trusted']
+            }
+            
+            # Amount anomaly detection
+            if request.transaction.amount > (payee_info['average_amount'] * 3):
+                risk_score += 20
+                indicators.append(f"⚠️ Amount anomaly: 3x higher than usual (avg: ₹{payee_info['average_amount']:.2f})")
+            
+            # Trust bonus
+            if payee_info['is_trusted']:
+                risk_score = max(0, risk_score - 15)
+                details['trusted_payee'] = True
+        
         risk_level = get_risk_level(risk_score)
         is_safe = risk_score < 50
         
@@ -624,6 +664,19 @@ async def analyze_transaction(
             fraud_indicators=indicators,
             user_id=user.user_id
         )
+        
+        # Log transaction in payee database (regardless of whether it was blocked)
+        # Don't log if risk is critical to avoid tracking blocked fraud attempts
+        if risk_score < 90:
+            payee_db.add_transaction(
+                user_id=user.user_id,
+                payee_upi=request.transaction.recipient_upi,
+                amount=request.transaction.amount,
+                payee_name=request.transaction.recipient_name,
+                transaction_note=request.transaction.transaction_note,
+                risk_score=risk_score,
+                was_blocked=(risk_score >= 70)
+            )
         
         return TransactionAnalysisResponse(
             transaction=request.transaction,
@@ -1424,6 +1477,160 @@ async def analyze_qr_code(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to analyze QR code: {str(e)}"
+        )
+
+
+# ============================================================
+# 💼 PAYEE MANAGEMENT ENDPOINTS (New Payee Detection)
+# ============================================================
+
+@app.get("/payee/info/{payee_upi}", tags=["Payee Management"])
+async def get_payee_information(
+    payee_upi: str,
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    Get information about a specific payee
+    
+    **Returns**:
+    - Transaction count with this payee
+    - Average transaction amount
+    - First and last transaction dates
+    - Whether marked as trusted
+    - Is new payee or not
+    """
+    try:
+        is_new = payee_db.is_new_payee(user.user_id, payee_upi)
+        
+        if is_new:
+            return {
+                "payee_upi": payee_upi,
+                "is_new_payee": True,
+                "message": "This is a new payee. No transaction history found."
+            }
+        
+        payee_info = payee_db.get_payee_info(user.user_id, payee_upi)
+        return {
+            "payee_upi": payee_upi,
+            "is_new_payee": False,
+            **payee_info
+        }
+    
+    except Exception as e:
+        logger.error(f"Error fetching payee info: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch payee info: {str(e)}"
+        )
+
+
+@app.post("/payee/trust/{payee_upi}", tags=["Payee Management"])
+async def mark_payee_trusted(
+    payee_upi: str,
+    trusted: bool = True,
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    Mark a payee as trusted or untrusted
+    
+    **Parameters**:
+    - `payee_upi`: UPI ID of the payee
+    - `trusted`: True to mark as trusted, False to remove trust
+    
+    **Trusted payees** get lower risk scores in future transactions
+    """
+    try:
+        # Check if payee exists
+        if payee_db.is_new_payee(user.user_id, payee_upi):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payee not found. You need to transact with them first."
+            )
+        
+        payee_db.mark_as_trusted(user.user_id, payee_upi, trusted)
+        
+        return {
+            "success": True,
+            "payee_upi": payee_upi,
+            "trusted": trusted,
+            "message": f"Payee {'marked as trusted' if trusted else 'trust removed'}"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error marking payee trust: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update payee trust: {str(e)}"
+        )
+
+
+@app.get("/payee/transactions", tags=["Payee Management"])
+async def get_transaction_history(
+    payee_upi: str = None,
+    limit: int = 50,
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    Get transaction history
+    
+    **Query Parameters**:
+    - `payee_upi`: Optional - filter by specific payee
+    - `limit`: Maximum number of transactions (default: 50)
+    
+    **Returns** list of past transactions with risk scores
+    """
+    try:
+        history = payee_db.get_transaction_history(
+            user_id=user.user_id,
+            payee_upi=payee_upi,
+            limit=min(limit, 200)  # Cap at 200
+        )
+        
+        return {
+            "total_transactions": len(history),
+            "filtered_by_payee": payee_upi,
+            "transactions": history
+        }
+    
+    except Exception as e:
+        logger.error(f"Error fetching transaction history: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch transaction history: {str(e)}"
+        )
+
+
+@app.get("/payee/statistics", tags=["Payee Management"])
+async def get_payee_statistics(
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    Get user's overall payee and transaction statistics
+    
+    **Returns**:
+    - Total unique payees
+    - Trusted payees count
+    - Total transactions
+    - Total amount transacted
+    - Average transaction amount
+    - Blocked transactions count
+    """
+    try:
+        stats = payee_db.get_user_statistics(user.user_id)
+        
+        return {
+            "user_id": user.user_id,
+            "statistics": stats,
+            "generated_at": datetime.utcnow().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error fetching payee statistics: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch payee statistics: {str(e)}"
         )
 
 
