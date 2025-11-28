@@ -3,6 +3,7 @@
 ## 📋 What We Just Built
 
 **A complete Flutter fraud detection app with:**
+
 - ✅ QR Code Scanner (NEW!)
 - ✅ URL/SMS/Transaction Analysis
 - ✅ Android Permissions System (NEW!)
@@ -14,19 +15,21 @@
 ## 🎯 Step-by-Step Usage
 
 ### **Step 1: Run the Backend**
+
 ```bash
 # Terminal 1: FastAPI Backend
 cd backend/logic
 python main.py
 # Running on http://localhost:8000
 
-# Terminal 2: Auth Server  
+# Terminal 2: Auth Server
 cd backend/auth
 node server.js
 # Running on http://localhost:3000
 ```
 
 ### **Step 2: Run Flutter App**
+
 ```bash
 # Terminal 3: Flutter
 cd frontend/app
@@ -37,6 +40,7 @@ flutter run
 ### **Step 3: Test Features**
 
 #### **🔍 QR Scanner (NEW!)**
+
 1. Open app → Dashboard
 2. Tap "QR Scanner" card
 3. **Permission Dialog appears** ← NEW!
@@ -48,6 +52,7 @@ flutter run
 7. Results show: Safe ✅ or Suspicious ⚠️
 
 #### **📱 SMS Analysis**
+
 1. Tap "SMS Check" card
 2. Optional: Request SMS permission for auto-scan
 3. Enter sender + message
@@ -55,12 +60,14 @@ flutter run
 5. See risk score + extracted UPI IDs/URLs
 
 #### **💳 Transaction Check**
+
 1. Tap "Transaction" card
 2. Enter payee name + amount + type
 3. Tap "Analyze"
 4. View transaction risk assessment
 
 #### **🔗 URL Check**
+
 1. Tap "URL Scan" card
 2. Paste suspicious link
 3. Tap "Analyze"
@@ -71,18 +78,21 @@ flutter run
 ## 🔐 Permissions Explained
 
 ### **Camera Permission** (NEW!)
+
 - **When:** Tap QR Scanner
 - **Dialog:** "Allow camera to scan QR codes for fraud detection"
 - **Used For:** Real-time QR code scanning
 - **Can Deny:** Yes, QR scanner won't work
 
 ### **SMS Permission** (Optional, for future)
+
 - **When:** Enable SMS Protection
 - **Dialog:** "Allow SMS access to detect scams automatically"
 - **Used For:** Auto-scan incoming messages
 - **Can Deny:** Yes, manual SMS analysis still works
 
 ### **Notification Permission**
+
 - **When:** First app launch
 - **Used For:** Fraud alerts
 - **Can Deny:** Yes, in-app alerts still work
@@ -112,18 +122,21 @@ Dashboard (Home Screen)
 ## 🎨 Visual Features
 
 ### **Royal Dark Theme**
+
 - Deep navy blue background
 - Royal gold accents
 - Burgundy highlights
 - Premium shadows & gradients
 
 ### **Animated Elements**
+
 - Count-up animation on stat cards (0 → final value)
 - Smooth page transitions
 - Loading indicators
 - Pulsing risk badges
 
 ### **Risk Colors**
+
 - 🟢 **Green** (0-39): Safe
 - 🟠 **Orange** (40-69): Medium Risk
 - 🔴 **Red** (70-100): High Risk / Blocked
@@ -133,6 +146,7 @@ Dashboard (Home Screen)
 ## 🔧 Configuration
 
 ### **Change Backend URL**
+
 ```dart
 // lib/main.dart or dashboard_screen.dart
 final baseUrl = 'http://localhost:8000'; // Change this
@@ -141,6 +155,7 @@ final baseUrl = 'http://localhost:8000'; // Change this
 ```
 
 ### **JWT Token**
+
 ```dart
 // Currently using mock/optional JWT
 // For production: Implement proper login flow
@@ -166,6 +181,7 @@ final baseUrl = 'http://localhost:8000'; // Change this
 ## 🐛 Troubleshooting
 
 ### **Camera Permission Not Working**
+
 ```dart
 // Check AndroidManifest.xml has:
 <uses-permission android:name="android.permission.CAMERA"/>
@@ -174,6 +190,7 @@ final baseUrl = 'http://localhost:8000'; // Change this
 ```
 
 ### **QR Scanner Black Screen**
+
 ```dart
 // Restart app after granting permission
 // Ensure device has working camera
@@ -181,6 +198,7 @@ final baseUrl = 'http://localhost:8000'; // Change this
 ```
 
 ### **API Errors**
+
 ```dart
 // Verify backend is running on :8000
 // Check baseUrl matches your backend
@@ -188,6 +206,7 @@ final baseUrl = 'http://localhost:8000'; // Change this
 ```
 
 ### **Compile Errors**
+
 ```bash
 flutter clean
 flutter pub get
@@ -199,16 +218,19 @@ flutter run
 ## 📊 What Changed (Summary)
 
 ### **NEW Files Created:**
+
 1. `lib/services/permission_service.dart` - Permission handling
 2. `lib/screens/qr_scanner_screen.dart` - QR scanner UI
 3. `frontend/IMPLEMENTATION_SUMMARY.md` - Full documentation
 
 ### **Modified Files:**
+
 1. `android/app/src/main/AndroidManifest.xml` - Added permissions
 2. `lib/services/api_service.dart` - Added `/analyze/qr`, `/dashboard`, `/history` endpoints
 3. `lib/screens/dashboard_screen.dart` - QR Scanner navigation with permission check
 
 ### **Permissions Added:**
+
 - ✅ CAMERA - QR scanning
 - ✅ READ_SMS - SMS analysis
 - ✅ RECEIVE_SMS - SMS monitoring
@@ -226,7 +248,7 @@ flutter run
 ✅ **Permissions work** - Dialogs show, settings navigation works  
 ✅ **Backend integrated** - All 6 API endpoints connected  
 ✅ **UI is premium** - Royal theme, animations, smooth UX  
-✅ **Android-specific** - Proper permissions, native features  
+✅ **Android-specific** - Proper permissions, native features
 
 ---
 
@@ -257,18 +279,21 @@ flutter install
 ## 🚀 Next Steps
 
 1. **Test on Real Device**
+
    - Build APK: `flutter build apk`
    - Install on Android phone
    - Test camera permissions
    - Scan real payment QR codes
 
 2. **Add More Features**
+
    - History screen (API already ready)
    - Settings screen (API already ready)
    - Background SMS monitoring
    - Push notifications
 
 3. **Polish UI**
+
    - Add splash screen
    - Add onboarding flow
    - Add tutorial for first-time users
