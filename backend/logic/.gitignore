@@ -54,3 +54,5 @@ Thumbs.db
 # FastAPI
 *.db
 *.sqlite
+
+/archieves

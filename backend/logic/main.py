@@ -22,7 +22,11 @@ from models import (
     TransactionAnalysisRequest, TransactionAnalysisResponse,
     HealthCheckResponse, ErrorResponse,
     RiskLevel, FraudType,
-    UserFeedback, FeedbackResponse
+    UserFeedback, FeedbackResponse,
+    FraudReportRequest, FraudReportResponse,
+    AnalysisHistoryItem, AnalysisHistoryResponse,
+    DashboardStats, UserSettings, SettingsUpdateRequest,
+    QRCodeAnalysisRequest, QRCodeAnalysisResponse
 )
 from auth import get_current_user, get_optional_user, TokenData, check_auth_service_health
 from risk_scoring import (
@@ -380,6 +384,20 @@ async def analyze_url(
             redirect_risk=redirect_risk
         )
         
+        # Track in analysis history
+        import uuid
+        analysis_id = str(uuid.uuid4())
+        learning_engine.add_analysis_history(
+            analysis_id=analysis_id,
+            analysis_type='url',
+            entity=request.url,
+            risk_level=risk_level,
+            risk_score=adjusted_score,
+            is_safe=is_safe,
+            fraud_indicators=indicators,
+            user_id=user.user_id
+        )
+        
         logger.info(f"🤖 Agent Decision: {action_resp['action']} (score: {adjusted_score:.1f})")
         return response
         
@@ -493,6 +511,21 @@ async def analyze_sms(
         if sim_change_warning:
             recommendations.insert(0, "🚨 Contact your bank immediately if you didn't change your SIM card")
         
+        # Track in analysis history
+        import uuid
+        analysis_id = str(uuid.uuid4())
+        entity = request.sender or "Unknown sender"
+        learning_engine.add_analysis_history(
+            analysis_id=analysis_id,
+            analysis_type='sms',
+            entity=entity,
+            risk_level=risk_level,
+            risk_score=risk_score,
+            is_safe=is_safe,
+            fraud_indicators=indicators,
+            user_id=user.user_id
+        )
+        
         return SMSAnalysisResponse(
             message=request.message,
             sender=request.sender,
@@ -577,6 +610,20 @@ async def analyze_transaction(
         
         # Calculate recipient trust score (simplified - in production, use historical data)
         recipient_trust_score = max(0, 100 - risk_score)
+        
+        # Track in analysis history
+        import uuid
+        analysis_id = str(uuid.uuid4())
+        learning_engine.add_analysis_history(
+            analysis_id=analysis_id,
+            analysis_type='transaction',
+            entity=request.transaction.recipient_upi,
+            risk_level=risk_level,
+            risk_score=risk_score,
+            is_safe=is_safe,
+            fraud_indicators=indicators,
+            user_id=user.user_id
+        )
         
         return TransactionAnalysisResponse(
             transaction=request.transaction,
@@ -781,7 +828,7 @@ async def get_feedback_history(
     tags=["Agent"],
     summary="Get agent status and goal"
 )
-async def get_agent_status():
+async def get_agent_status(user: TokenData = Depends(get_current_user)):
     """
     Get the agent's current status, goal, and operational metrics
     
@@ -791,6 +838,8 @@ async def get_agent_status():
     - Layer 3: Reasoning engine status
     - Layer 4: Actions taken
     - Layer 5: Learning metrics
+    
+    **Requires Authentication**
     """
     try:
         metrics = learning_engine.get_metrics()
@@ -842,6 +891,539 @@ async def get_agent_status():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get agent status: {str(e)}"
+        )
+
+
+# ============================================================
+# 🚨 FRAUD REPORTING ENDPOINTS (Community Protection)
+# ============================================================
+
+@app.post("/report/fraud", response_model=FraudReportResponse, tags=["Fraud Reports"])
+async def report_fraud(
+    report: FraudReportRequest,
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    Report a fraud incident to help protect the community
+    
+    **Automatic Blacklisting**: When an entity receives 50+ fraud reports,
+    it will be automatically blacklisted and blocked for all users.
+    
+    **Entity Types**:
+    - `phone_numbers`: SMS/call fraud
+    - `upi_ids`: Fake UPI IDs
+    - `urls`: Phishing websites
+    - `senders`: Fraudulent sender names
+    - `domains`: Malicious domains
+    
+    **Example**:
+    ```json
+    {
+        "entity_id": "+919876543210",
+        "entity_type": "phone_numbers",
+        "description": "Pretending to be bank, asked for OTP",
+        "fraud_category": "sms_scam",
+        "amount_lost": 5000.0
+    }
+    ```
+    """
+    try:
+        logger.info(f"Fraud report received from user {user.user_id} for {report.entity_type}:{report.entity_id}")
+        
+        # Validate entity type
+        valid_types = ['phone_numbers', 'upi_ids', 'urls', 'senders', 'domains']
+        if report.entity_type not in valid_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid entity_type. Must be one of: {', '.join(valid_types)}"
+            )
+        
+        # Submit fraud report to learning engine
+        result = learning_engine.report_fraud(
+            entity_id=report.entity_id,
+            entity_type=report.entity_type,
+            user_id=user.user_id,
+            description=report.description,
+            fraud_category=report.fraud_category,
+            amount_lost=report.amount_lost,
+            additional_info=report.additional_info
+        )
+        
+        # Log if entity was blacklisted
+        if result['blacklisted']:
+            logger.warning(
+                f"🚨 AUTOMATIC BLACKLIST: {report.entity_type}:{report.entity_id} "
+                f"after {result['report_count']} reports"
+            )
+        
+        return FraudReportResponse(
+            success=True,
+            entity_id=result['entity_id'],
+            entity_type=result['entity_type'],
+            report_count=result['report_count'],
+            threshold=result['threshold'],
+            blacklisted=result['blacklisted'],
+            message=result['message']
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing fraud report: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process fraud report: {str(e)}"
+        )
+
+
+@app.get("/report/history", tags=["Fraud Reports"])
+async def get_fraud_report_history(
+    user: TokenData = Depends(get_current_user),
+    entity_id: str = None,
+    entity_type: str = None,
+    limit: int = 100
+):
+    """
+    Get fraud report history with optional filters
+    
+    **Query Parameters**:
+    - `entity_id`: Filter by specific entity (phone number, UPI ID, etc.)
+    - `entity_type`: Filter by entity type (phone_numbers, upi_ids, etc.)
+    - `limit`: Maximum number of reports to return (default: 100)
+    
+    Returns list of fraud reports with timestamps and report counts
+    """
+    try:
+        reports = learning_engine.get_fraud_reports(
+            entity_id=entity_id,
+            entity_type=entity_type,
+            limit=limit
+        )
+        
+        return {
+            "total_reports": len(reports),
+            "filters": {
+                "entity_id": entity_id,
+                "entity_type": entity_type,
+                "limit": limit
+            },
+            "reports": reports
+        }
+    
+    except Exception as e:
+        logger.error(f"Error fetching fraud report history: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch fraud report history: {str(e)}"
+        )
+
+
+@app.get("/report/statistics", tags=["Fraud Reports"])
+async def get_fraud_report_statistics(
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    Get comprehensive statistics about fraud reports
+    
+    Returns:
+    - Total unique entities reported
+    - Total number of reports
+    - Distribution by report count (1-4, 5-9, 10-19, 20-49, 50+)
+    - Reports by entity type
+    - Reports by fraud category
+    - Total amount lost
+    - Entities that reached blacklist threshold
+    """
+    try:
+        stats = learning_engine.get_report_statistics()
+        
+        return {
+            "statistics": stats,
+            "threshold_info": {
+                "blacklist_threshold": learning_engine.fraud_report_threshold,
+                "description": f"Entities with {learning_engine.fraud_report_threshold}+ reports are automatically blacklisted"
+            },
+            "generated_at": datetime.utcnow().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error fetching fraud report statistics: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch fraud report statistics: {str(e)}"
+        )
+
+
+# ============================================================
+# 📊 DASHBOARD ENDPOINT
+# ============================================================
+
+@app.get("/dashboard", response_model=DashboardStats, tags=["Dashboard"])
+async def get_dashboard(
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    Get dashboard overview with fraud protection statistics
+    
+    **Returns**:
+    - Total analyses performed
+    - Analyses today
+    - Blocked threats count
+    - Active alerts
+    - Risk distribution (low, medium, high, critical)
+    - Analysis by type (URL, SMS, transaction, QR)
+    - Recent high-risk alerts
+    - Protection rate percentage
+    - Learning accuracy
+    
+    **Perfect for**: Dashboard homepage showing user's fraud protection status
+    """
+    try:
+        logger.info(f"Fetching dashboard for user {user.user_id}")
+        
+        # Get stats from learning engine
+        stats = learning_engine.get_dashboard_stats(user.user_id)
+        
+        # Get learning metrics
+        metrics = learning_engine.get_metrics()
+        
+        # Convert recent alerts to proper format
+        recent_alerts = [
+            AnalysisHistoryItem(
+                id=alert['id'],
+                analysis_type=alert['analysis_type'],
+                entity=alert['entity'],
+                risk_level=alert['risk_level'],
+                risk_score=alert['risk_score'],
+                is_safe=alert['is_safe'],
+                fraud_indicators=alert['fraud_indicators'],
+                timestamp=datetime.fromisoformat(alert['timestamp']),
+                user_action=alert.get('user_action')
+            )
+            for alert in stats['recent_alerts']
+        ]
+        
+        return DashboardStats(
+            total_analyses=stats['total_analyses'],
+            analyses_today=stats['analyses_today'],
+            blocked_threats=stats['blocked_threats'],
+            active_alerts=stats['active_alerts'],
+            risk_distribution=stats['risk_distribution'],
+            analysis_by_type=stats['analysis_by_type'],
+            recent_alerts=recent_alerts,
+            protection_rate=stats['protection_rate'],
+            learning_accuracy=metrics.get('accuracy', 0.0) * 100
+        )
+    
+    except Exception as e:
+        logger.error(f"Error fetching dashboard: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch dashboard: {str(e)}"
+        )
+
+
+# ============================================================
+# 📜 ANALYSIS HISTORY ENDPOINT
+# ============================================================
+
+@app.get("/history", response_model=AnalysisHistoryResponse, tags=["History"])
+async def get_analysis_history(
+    user: TokenData = Depends(get_current_user),
+    analysis_type: str = None,
+    risk_level: str = None,
+    limit: int = 100
+):
+    """
+    Get history of all fraud analysis results
+    
+    **Query Parameters**:
+    - `analysis_type`: Filter by type (url, sms, transaction, qr_code)
+    - `risk_level`: Filter by risk (low, medium, high, critical)
+    - `limit`: Maximum results (default: 100, max: 500)
+    
+    **Returns**:
+    - Complete analysis history for the user
+    - Each entry includes: type, entity, risk score, indicators, timestamp
+    - User actions/feedback if provided
+    
+    **Perfect for**: History page showing all past fraud checks
+    """
+    try:
+        logger.info(f"Fetching history for user {user.user_id}")
+        
+        # Validate limit
+        if limit > 500:
+            limit = 500
+        
+        # Get history from learning engine
+        history = learning_engine.get_analysis_history(
+            user_id=user.user_id,
+            analysis_type=analysis_type,
+            risk_level=risk_level,
+            limit=limit
+        )
+        
+        # Convert to proper format
+        analyses = [
+            AnalysisHistoryItem(
+                id=item['id'],
+                analysis_type=item['analysis_type'],
+                entity=item['entity'],
+                risk_level=item['risk_level'],
+                risk_score=item['risk_score'],
+                is_safe=item['is_safe'],
+                fraud_indicators=item['fraud_indicators'],
+                timestamp=datetime.fromisoformat(item['timestamp']),
+                user_action=item.get('user_action')
+            )
+            for item in history
+        ]
+        
+        return AnalysisHistoryResponse(
+            total_analyses=len(analyses),
+            analyses=analyses,
+            filters={
+                'analysis_type': analysis_type,
+                'risk_level': risk_level,
+                'limit': limit
+            }
+        )
+    
+    except Exception as e:
+        logger.error(f"Error fetching history: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch history: {str(e)}"
+        )
+
+
+# ============================================================
+# ⚙️ USER SETTINGS ENDPOINTS
+# ============================================================
+
+@app.get("/settings", response_model=UserSettings, tags=["Settings"])
+async def get_user_settings(
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    Get user's current settings
+    
+    **Returns**:
+    - Risk thresholds (low, medium, high)
+    - Feature toggles (URL, SMS, transaction analysis, etc.)
+    - Notification preferences
+    - Auto-feedback settings
+    
+    **Perfect for**: Settings page to show current configuration
+    """
+    try:
+        settings = learning_engine.get_user_settings(user.user_id)
+        return UserSettings(**settings)
+    
+    except Exception as e:
+        logger.error(f"Error fetching settings: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch settings: {str(e)}"
+        )
+
+
+@app.put("/settings", response_model=UserSettings, tags=["Settings"])
+async def update_user_settings(
+    settings: SettingsUpdateRequest,
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    Update user settings
+    
+    **Request Body**: Partial update - only include fields to change
+    - `risk_thresholds`: Update risk threshold values
+    - `features`: Enable/disable specific features
+    - `notification_preferences`: Update notification settings
+    - `auto_submit_feedback`: Toggle automatic feedback
+    
+    **Returns**: Updated complete settings
+    
+    **Perfect for**: Settings page save functionality
+    """
+    try:
+        logger.info(f"Updating settings for user {user.user_id}")
+        
+        # Build update dict
+        updates = {}
+        if settings.risk_thresholds:
+            updates['risk_thresholds'] = settings.risk_thresholds.model_dump()
+        if settings.features:
+            updates['features'] = settings.features.model_dump()
+        if settings.notification_preferences:
+            updates['notification_preferences'] = settings.notification_preferences
+        if settings.auto_submit_feedback is not None:
+            updates['auto_submit_feedback'] = settings.auto_submit_feedback
+        
+        # Update settings
+        learning_engine.update_user_settings(user.user_id, updates)
+        
+        # Return updated settings
+        updated = learning_engine.get_user_settings(user.user_id)
+        return UserSettings(**updated)
+    
+    except Exception as e:
+        logger.error(f"Error updating settings: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update settings: {str(e)}"
+        )
+
+
+# ============================================================
+# 📱 QR CODE ANALYSIS ENDPOINT
+# ============================================================
+
+@app.post("/analyze/qr", response_model=QRCodeAnalysisResponse, tags=["Analysis"])
+async def analyze_qr_code(
+    request: QRCodeAnalysisRequest,
+    user: TokenData = Depends(get_current_user)
+):
+    """
+    🤖 **QR Code Fraud Analysis** - Scan and analyze QR codes for fraud
+    
+    **Supported QR Types**:
+    - UPI Payment QR codes (upi://pay?...)
+    - Website URLs (https://...)
+    - Plain text
+    
+    **The Agent Will Detect**:
+    - Fake UPI payment QR codes
+    - Phishing URLs in QR codes
+    - Suspicious payment amounts
+    - Unknown/unverified merchants
+    - Typosquatting in UPI IDs
+    
+    **Perfect for**: Mobile app QR scanner feature
+    """
+    try:
+        import uuid
+        import re
+        
+        logger.info(f"🤖 QR CODE ANALYSIS for user {user.user_id}")
+        
+        # Determine QR type
+        qr_data = request.qr_data
+        qr_type = "unknown"
+        extracted_info = {}
+        fraud_indicators = []
+        risk_score = 0.0
+        
+        # Check if UPI payment
+        if qr_data.startswith("upi://pay"):
+            qr_type = "upi_payment"
+            
+            # Parse UPI intent
+            upi_analysis = analyze_upi_intent(qr_data)
+            extracted_info = {
+                'payee_vpa': upi_analysis.get('payee_vpa'),
+                'payee_name': upi_analysis.get('payee_name'),
+                'amount': upi_analysis.get('amount'),
+                'transaction_note': upi_analysis.get('transaction_note')
+            }
+            
+            # Use transaction analysis
+            if extracted_info['payee_vpa']:
+                risk_score, indicators, _ = calculate_transaction_risk_score(
+                    recipient_upi=extracted_info['payee_vpa'],
+                    amount=extracted_info.get('amount', 0.0),
+                    recipient_name=extracted_info.get('payee_name')
+                )
+                fraud_indicators = indicators
+        
+        # Check if URL
+        elif qr_data.startswith(('http://', 'https://', 'www.')):
+            qr_type = "url"
+            
+            # Use URL analysis
+            risk_score, indicators, details = calculate_url_risk_score(qr_data)
+            fraud_indicators = indicators
+            extracted_info = {'url': qr_data, 'domain': urlparse(qr_data).netloc}
+        
+        # Plain text
+        else:
+            qr_type = "text"
+            
+            # Check for suspicious patterns
+            suspicious_patterns = [
+                r'password', r'otp', r'pin', r'cvv', r'bank',
+                r'account', r'credit', r'debit', r'payment'
+            ]
+            for pattern in suspicious_patterns:
+                if re.search(pattern, qr_data.lower()):
+                    fraud_indicators.append(f"Suspicious keyword: {pattern}")
+                    risk_score += 15
+            
+            extracted_info = {'text': qr_data[:100]}
+        
+        # Apply learning layer adjustments
+        if qr_type == "upi_payment" and extracted_info.get('payee_vpa'):
+            adjusted_score, reasons = learning_engine.adjust_risk_score(
+                entity_id=extracted_info['payee_vpa'],
+                entity_type='upi_ids',
+                original_score=risk_score
+            )
+            risk_score = adjusted_score
+            fraud_indicators.extend(reasons)
+        
+        # Determine risk level
+        risk_level = get_risk_level(risk_score)
+        is_safe = risk_score < 40
+        
+        # Generate recommendations
+        recommendations = []
+        if not is_safe:
+            if qr_type == "upi_payment":
+                recommendations.append("⚠️ Do not scan or pay to this QR code")
+                recommendations.append("Verify the merchant/recipient independently")
+                recommendations.append("Report this QR code if you found it in a suspicious location")
+            elif qr_type == "url":
+                recommendations.append("⚠️ Do not visit this URL from the QR code")
+                recommendations.append("Manually type the website address instead")
+            else:
+                recommendations.append("⚠️ This QR code contains suspicious content")
+        else:
+            recommendations.append("✅ QR code appears safe")
+            if qr_type == "upi_payment":
+                recommendations.append("Verify payment details before confirming")
+        
+        # Track in history
+        analysis_id = str(uuid.uuid4())
+        entity = extracted_info.get('payee_vpa') or extracted_info.get('url') or qr_data[:50]
+        learning_engine.add_analysis_history(
+            analysis_id=analysis_id,
+            analysis_type='qr_code',
+            entity=entity,
+            risk_level=risk_level.value,
+            risk_score=risk_score,
+            is_safe=is_safe,
+            fraud_indicators=fraud_indicators,
+            user_id=user.user_id
+        )
+        
+        return QRCodeAnalysisResponse(
+            qr_data=qr_data,
+            qr_type=qr_type,
+            risk_level=risk_level,
+            risk_score=risk_score,
+            is_safe=is_safe,
+            fraud_indicators=fraud_indicators,
+            extracted_info=extracted_info,
+            recommendations=recommendations,
+            timestamp=datetime.utcnow()
+        )
+    
+    except Exception as e:
+        logger.error(f"Error analyzing QR code: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze QR code: {str(e)}"
         )
 
 

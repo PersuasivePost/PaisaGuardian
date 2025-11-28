@@ -1,0 +1,554 @@
+{
+  "+919876543210": [
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user001",
+      "description": "Fraud report #1",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.421918"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user002",
+      "description": "Fraud report #2",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422117"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user003",
+      "description": "Fraud report #3",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422123"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user004",
+      "description": "Fraud report #4",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422126"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user005",
+      "description": "Fraud report #5",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422129"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user006",
+      "description": "Fraud report #6",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422131"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user007",
+      "description": "Fraud report #7",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422134"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user008",
+      "description": "Fraud report #8",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422136"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user009",
+      "description": "Fraud report #9",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422138"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user010",
+      "description": "Fraud report #10",
+      "fraud_category": "sms_scam",
+      "amount_lost": 5000.0,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422140"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user011",
+      "description": "Fraud report #11",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422143"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user012",
+      "description": "Fraud report #12",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422145"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user013",
+      "description": "Fraud report #13",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422149"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user014",
+      "description": "Fraud report #14",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422152"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user015",
+      "description": "Fraud report #15",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422154"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user016",
+      "description": "Fraud report #16",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422156"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user017",
+      "description": "Fraud report #17",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422158"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user018",
+      "description": "Fraud report #18",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422160"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user019",
+      "description": "Fraud report #19",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422162"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user020",
+      "description": "Fraud report #20",
+      "fraud_category": "sms_scam",
+      "amount_lost": 5000.0,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422164"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user021",
+      "description": "Fraud report #21",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422166"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user022",
+      "description": "Fraud report #22",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422168"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user023",
+      "description": "Fraud report #23",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422171"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user024",
+      "description": "Fraud report #24",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422173"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user025",
+      "description": "Fraud report #25",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422175"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user026",
+      "description": "Fraud report #26",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422177"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user027",
+      "description": "Fraud report #27",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422179"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user028",
+      "description": "Fraud report #28",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422181"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user029",
+      "description": "Fraud report #29",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422183"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user030",
+      "description": "Fraud report #30",
+      "fraud_category": "sms_scam",
+      "amount_lost": 5000.0,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422185"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user031",
+      "description": "Fraud report #31",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422187"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user032",
+      "description": "Fraud report #32",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422189"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user033",
+      "description": "Fraud report #33",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422191"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user034",
+      "description": "Fraud report #34",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422193"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user035",
+      "description": "Fraud report #35",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422195"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user036",
+      "description": "Fraud report #36",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422197"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user037",
+      "description": "Fraud report #37",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422199"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user038",
+      "description": "Fraud report #38",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422201"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user039",
+      "description": "Fraud report #39",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422203"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user040",
+      "description": "Fraud report #40",
+      "fraud_category": "sms_scam",
+      "amount_lost": 5000.0,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422205"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user041",
+      "description": "Fraud report #41",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422207"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user042",
+      "description": "Fraud report #42",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422210"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user043",
+      "description": "Fraud report #43",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422212"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user044",
+      "description": "Fraud report #44",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422214"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user045",
+      "description": "Fraud report #45",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422216"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user046",
+      "description": "Fraud report #46",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422218"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user047",
+      "description": "Fraud report #47",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422220"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user048",
+      "description": "Fraud report #48",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422223"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user049",
+      "description": "Fraud report #49",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422225"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user050",
+      "description": "Fraud report #50",
+      "fraud_category": "sms_scam",
+      "amount_lost": 5000.0,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422227"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user051",
+      "description": "Fraud report #51",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422280"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user052",
+      "description": "Fraud report #52",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422284"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user053",
+      "description": "Fraud report #53",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422287"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user054",
+      "description": "Fraud report #54",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422289"
+    },
+    {
+      "entity_id": "+919876543210",
+      "entity_type": "phone_numbers",
+      "user_id": "user055",
+      "description": "Fraud report #55",
+      "fraud_category": "sms_scam",
+      "amount_lost": null,
+      "additional_info": {},
+      "timestamp": "2025-11-28T18:42:50.422291"
+    }
+  ]
+}

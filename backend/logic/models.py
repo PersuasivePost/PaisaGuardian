@@ -2,7 +2,7 @@
 Pydantic models for fraud detection system
 """
 from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
 
@@ -99,6 +99,207 @@ class URLAnalysisResponse(BaseModel):
     risk_score: float = Field(..., ge=0, le=100, description="Risk score from 0-100")
     is_safe: bool
     fraud_indicators: List[str] = Field(default_factory=list)
+
+
+class FraudReportRequest(BaseModel):
+    """Request model for reporting fraud by users"""
+    entity_id: str = Field(..., description="The fraudulent entity (phone number, UPI ID, URL, etc.)")
+    entity_type: str = Field(
+        ...,
+        description="Type of entity: phone_numbers, upi_ids, urls, senders, domains"
+    )
+    description: Optional[str] = Field(None, description="Description of the fraud incident")
+    fraud_category: Optional[str] = Field(
+        None,
+        description="Category: phishing, fake_upi, sms_scam, impersonation, qr_code_fraud, etc."
+    )
+    amount_lost: Optional[float] = Field(None, ge=0, description="Amount lost in fraud (if any)")
+    additional_info: Optional[Dict] = Field(
+        default_factory=dict,
+        description="Additional information (transaction ID, timestamps, etc.)"
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "entity_id": "+919876543210",
+                "entity_type": "phone_numbers",
+                "description": "Received SMS claiming to be from bank, asking for OTP",
+                "fraud_category": "sms_scam",
+                "amount_lost": 5000.0,
+                "additional_info": {
+                    "sms_content": "Your account will be blocked. Share OTP: XXXXX",
+                    "bank_name": "HDFC Bank"
+                }
+            }
+        }
+
+
+class FraudReportResponse(BaseModel):
+    """Response model for fraud report submission"""
+    success: bool
+    entity_id: str
+    entity_type: str
+    report_count: int = Field(..., description="Total number of reports for this entity")
+    threshold: int = Field(..., description="Threshold for automatic blacklisting")
+    blacklisted: bool = Field(..., description="Whether entity was automatically blacklisted")
+    message: str
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "entity_id": "+919876543210",
+                "entity_type": "phone_numbers",
+                "report_count": 52,
+                "threshold": 50,
+                "blacklisted": True,
+                "message": "⚠️ ALERT: Entity automatically blacklisted after 52 fraud reports"
+            }
+        }
+
+
+# Analysis History Models
+class AnalysisHistoryItem(BaseModel):
+    """Single analysis history entry"""
+    id: str = Field(..., description="Unique analysis ID")
+    analysis_type: str = Field(..., description="Type: url, sms, transaction, qr_code")
+    entity: str = Field(..., description="Entity analyzed (URL, phone, UPI ID)")
+    risk_level: RiskLevel
+    risk_score: float
+    is_safe: bool
+    fraud_indicators: List[str] = Field(default_factory=list)
+    timestamp: datetime
+    user_action: Optional[str] = Field(None, description="User feedback: safe, fraud, blocked")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "abc123",
+                "analysis_type": "url",
+                "entity": "https://suspicious-site.com",
+                "risk_level": "high",
+                "risk_score": 85.0,
+                "is_safe": False,
+                "fraud_indicators": ["Typosquatting detected", "Suspicious TLD"],
+                "timestamp": "2025-11-29T10:30:00Z",
+                "user_action": "blocked"
+            }
+        }
+
+
+class AnalysisHistoryResponse(BaseModel):
+    """Response for analysis history"""
+    total_analyses: int
+    analyses: List[AnalysisHistoryItem]
+    filters: Dict[str, Any] = Field(default_factory=dict)
+    
+
+# Dashboard Models
+class DashboardStats(BaseModel):
+    """Dashboard overview statistics"""
+    total_analyses: int = Field(..., description="Total fraud checks performed")
+    analyses_today: int = Field(..., description="Analyses performed today")
+    blocked_threats: int = Field(..., description="Total threats blocked")
+    active_alerts: int = Field(..., description="Current active alerts")
+    
+    risk_distribution: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Distribution by risk level: low, medium, high, critical"
+    )
+    
+    analysis_by_type: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Count by type: url, sms, transaction, qr_code"
+    )
+    
+    recent_alerts: List[AnalysisHistoryItem] = Field(
+        default_factory=list,
+        description="Last 5 high-risk detections"
+    )
+    
+    protection_rate: float = Field(
+        0.0,
+        description="Percentage of threats successfully blocked"
+    )
+    
+    learning_accuracy: float = Field(
+        0.0,
+        description="ML model accuracy from user feedback"
+    )
+
+
+# User Settings Models
+class RiskThresholds(BaseModel):
+    """Risk threshold settings"""
+    low: float = Field(40.0, ge=0, le=100, description="Low risk threshold (0-39 = safe)")
+    medium: float = Field(70.0, ge=0, le=100, description="Medium risk threshold (40-69 = warn)")
+    high: float = Field(100.0, ge=0, le=100, description="High risk threshold (70+ = block)")
+
+
+class FeatureToggles(BaseModel):
+    """Feature enable/disable settings"""
+    url_analysis: bool = Field(True, description="Enable URL fraud detection")
+    sms_analysis: bool = Field(True, description="Enable SMS fraud detection")
+    transaction_analysis: bool = Field(True, description="Enable UPI transaction analysis")
+    qr_code_scanning: bool = Field(True, description="Enable QR code fraud detection")
+    auto_blocking: bool = Field(True, description="Automatically block high-risk threats")
+    learning_mode: bool = Field(True, description="Learn from user feedback")
+    notifications: bool = Field(True, description="Send fraud alerts")
+
+
+class UserSettings(BaseModel):
+    """User settings configuration"""
+    risk_thresholds: RiskThresholds = Field(default_factory=RiskThresholds)
+    features: FeatureToggles = Field(default_factory=FeatureToggles)
+    notification_preferences: Dict[str, bool] = Field(
+        default_factory=lambda: {
+            "email_alerts": True,
+            "push_notifications": True,
+            "sms_alerts": False
+        }
+    )
+    auto_submit_feedback: bool = Field(
+        False,
+        description="Automatically submit feedback for blocked threats"
+    )
+
+
+class SettingsUpdateRequest(BaseModel):
+    """Request to update user settings"""
+    risk_thresholds: Optional[RiskThresholds] = None
+    features: Optional[FeatureToggles] = None
+    notification_preferences: Optional[Dict[str, bool]] = None
+    auto_submit_feedback: Optional[bool] = None
+
+
+# QR Code Analysis Models
+class QRCodeAnalysisRequest(BaseModel):
+    """Request model for QR code analysis"""
+    qr_data: str = Field(..., description="Raw data extracted from QR code")
+    context: Optional[str] = Field(None, description="Context where QR was found")
+    image_url: Optional[str] = Field(None, description="URL to QR code image")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "qr_data": "upi://pay?pa=merchant@paytm&pn=Store&am=500",
+                "context": "Physical poster at store"
+            }
+        }
+
+
+class QRCodeAnalysisResponse(BaseModel):
+    """Response model for QR code analysis"""
+    qr_data: str
+    qr_type: str = Field(..., description="Type: upi_payment, url, text, unknown")
+    risk_level: RiskLevel
+    risk_score: float = Field(..., ge=0, le=100)
+    is_safe: bool
+    fraud_indicators: List[str] = Field(default_factory=list)
+    extracted_info: Dict = Field(default_factory=dict, description="Parsed QR data")
+    recommendations: List[str] = Field(default_factory=list)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
     detected_fraud_types: List[FraudType] = Field(default_factory=list)
     recommendations: List[str] = Field(default_factory=list)
     analysis_timestamp: datetime = Field(default_factory=datetime.utcnow)
