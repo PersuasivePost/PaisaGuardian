@@ -24,7 +24,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> analyzeUrl(String url, String jwt) async {
-    final uri = _build('/api/analyze/url');
+    final uri = _build('/analyze/url');
     try {
       final res = await http.post(
         uri,
@@ -47,7 +47,7 @@ class ApiService {
     String message,
     String jwt,
   ) async {
-    final uri = _build('/api/analyze/sms');
+    final uri = _build('/analyze/sms');
     try {
       final res = await http.post(
         uri,
@@ -71,7 +71,7 @@ class ApiService {
     String type,
     String jwt,
   ) async {
-    final uri = _build('/api/analyze/transaction');
+    final uri = _build('/analyze/transaction');
     try {
       final res = await http.post(
         uri,
@@ -83,6 +83,58 @@ class ApiService {
       );
       if (res.statusCode >= 200 && res.statusCode < 300)
         return jsonDecode(res.body) as Map<String, dynamic>;
+      throw ApiException(res.statusCode, res.body);
+    } on SocketException catch (e) {
+      throw ApiException(-1, 'Network error: ${e.message}');
+    }
+  }
+
+  Future<Map<String, dynamic>> analyzeQR(String qrData, String jwt) async {
+    final uri = _build('/analyze/qr');
+    try {
+      final res = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'qr_data': qrData}),
+      );
+      if (res.statusCode >= 200 && res.statusCode < 300)
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      throw ApiException(res.statusCode, res.body);
+    } on SocketException catch (e) {
+      throw ApiException(-1, 'Network error: ${e.message}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getDashboardStats(String jwt) async {
+    final uri = _build('/dashboard');
+    try {
+      final res = await http.get(
+        uri,
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+      if (res.statusCode >= 200 && res.statusCode < 300)
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      throw ApiException(res.statusCode, res.body);
+    } on SocketException catch (e) {
+      throw ApiException(-1, 'Network error: ${e.message}');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAnalysisHistory(String jwt) async {
+    final uri = _build('/history');
+    try {
+      final res = await http.get(
+        uri,
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final history = data['history'] as List?;
+        return history?.cast<Map<String, dynamic>>() ?? [];
+      }
       throw ApiException(res.statusCode, res.body);
     } on SocketException catch (e) {
       throw ApiException(-1, 'Network error: ${e.message}');

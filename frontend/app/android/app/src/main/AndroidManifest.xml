@@ -1,4 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internet permission -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    
+    <!-- SMS permissions for fraud detection -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <uses-permission android:name="android.permission.READ_SMS"/>
+    
+    <!-- Camera permission for QR scanning -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    
+    <!-- Notification permissions -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    
+    <!-- Phone state for device security checks -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    
     <application
         android:label="app"
         android:name="${applicationName}"

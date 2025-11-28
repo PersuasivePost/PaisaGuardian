@@ -3,9 +3,11 @@ import '../theme/colors.dart';
 import '../theme/text_styles.dart';
 import '../services/storage_service.dart';
 import '../services/jwt_helper.dart';
+import '../services/permission_service.dart';
 import 'url_analysis_screen.dart';
 import 'sms_analysis_screen.dart';
 import 'transaction_analysis_screen.dart';
+import 'qr_scanner_screen.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/action_card.dart';
 import '../widgets/alert_list_item.dart';
@@ -620,14 +622,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
               title: 'QR Scanner',
               subtitle: 'Scan QR codes',
               icon: Icons.qr_code_scanner,
-              onTap: () {
-                // TODO: Implement QR scanner
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('QR Scanner coming soon!'),
-                    backgroundColor: AppColors.tertiary,
-                  ),
-                );
+              onTap: () async {
+                // Request camera permission before navigating
+                final hasPermission =
+                    await PermissionService.ensureCameraPermission(context);
+                if (!hasPermission) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Camera permission is required to scan QR codes',
+                        ),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          QRScannerScreen(jwt: jwt, baseUrl: baseUrl),
+                    ),
+                  );
+                }
               },
             ),
           ],
