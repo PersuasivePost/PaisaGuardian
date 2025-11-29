@@ -20,7 +20,8 @@ class AuthService {
       // IMPORTANT: The serverClientId is the Web Client ID from Google Cloud Console
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
-        serverClientId: '783551040760-t5jvr87j1haef13j748ttoilce8n5er3.apps.googleusercontent.com',
+        serverClientId:
+            '783551040760-t5jvr87j1haef13j748ttoilce8n5er3.apps.googleusercontent.com',
       );
 
       // Sign out first to ensure clean state

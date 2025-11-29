@@ -9,6 +9,7 @@ frontend/app/build/app/outputs/flutter-apk/app-release.apk
 ```
 
 **Full Path:**
+
 ```
 C:\Users\Ashvatth\OneDrive\Desktop\AshWorks\clones\fraud-sentinel-agent\frontend\app\build\app\outputs\flutter-apk\app-release.apk
 ```
@@ -20,6 +21,7 @@ C:\Users\Ashvatth\OneDrive\Desktop\AshWorks\clones\fraud-sentinel-agent\frontend
 ## 📲 How to Install on Your Phone
 
 ### Option 1: USB Transfer (Recommended)
+
 1. Connect your phone to PC via USB
 2. Run this command:
    ```bash
@@ -27,7 +29,9 @@ C:\Users\Ashvatth\OneDrive\Desktop\AshWorks\clones\fraud-sentinel-agent\frontend
    ```
 
 ### Option 2: File Transfer
+
 1. Copy the APK file to your phone via:
+
    - USB file transfer
    - Google Drive
    - Email
@@ -48,28 +52,33 @@ The app needs to connect to your backend servers. You have 2 options:
 ### Option A: Run Servers on Your PC (Same WiFi Required)
 
 1. **Find your PC's IP address:**
+
    - Open Command Prompt
    - Run: `ipconfig`
    - Look for "IPv4 Address" (e.g., `192.168.1.100`)
 
 2. **Update the app's API URLs:**
-   
+
    Edit `frontend/app/lib/services/auth_service.dart`:
+
    ```dart
    static const String _authServerUrl = 'http://YOUR_PC_IP:3000';
    ```
-   
+
    Edit `frontend/app/lib/services/api_service.dart`:
+
    ```dart
    // Update baseUrl to use your PC's IP
    ```
 
 3. **Rebuild the APK:**
+
    ```bash
    flutter build apk --release
    ```
 
 4. **Start your servers:**
+
    ```bash
    # Terminal 1
    cd backend/auth
@@ -83,6 +92,7 @@ The app needs to connect to your backend servers. You have 2 options:
 5. Make sure your phone and PC are on the **same WiFi network**
 
 ### Option B: Deploy Servers to Cloud
+
 - Deploy auth server to Heroku, Railway, or Render
 - Deploy logic server to Python hosting
 - Update API URLs in app and rebuild
