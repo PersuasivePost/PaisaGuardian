@@ -104,13 +104,66 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     final isSafe = result['is_safe'] == true;
     final explanation =
         result['explanation'] as String? ?? 'No explanation available';
+    
+    // Check for collect request
+    final isCollectRequest = result['is_collect_request'] == true ||
+        (result['detected_fraud_types'] as List?)?.contains('fake_collect') == true;
+    final criticalWarning = result['critical_warning'] as String?;
+    
+    // Check QR type
+    final qrType = result['qr_type'] as String?;
+    final paymentMode = result['payment_mode'] as String?;
 
-    Color statusColor = isSafe ? AppColors.success : AppColors.error;
-    IconData statusIcon = isSafe ? Icons.check_circle : Icons.warning;
+    Color statusColor = isCollectRequest
+        ? Colors.red.shade900
+        : (isSafe ? AppColors.success : AppColors.error);
+    IconData statusIcon = isCollectRequest
+        ? Icons.error
+        : (isSafe ? Icons.check_circle : Icons.warning);
 
     return SingleChildScrollView(
       child: Column(
         children: [
+          // Critical collect request warning
+          if (isCollectRequest)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.shade900,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.dangerous, color: Colors.white, size: 40),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '🚨 COLLECT REQUEST DETECTED!',
+                          style: AppTextStyles.headline3.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    criticalWarning ?? 
+                    'This QR code will DEDUCT money FROM your account! '
+                    'Scammers use fake collect requests to steal money. DO NOT APPROVE!',
+                    style: AppTextStyles.body1.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -127,7 +180,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isSafe ? 'Safe QR Code' : 'Suspicious QR Code',
+                        isCollectRequest
+                            ? '⚠️ DANGEROUS QR Code'
+                            : (isSafe ? 'Safe QR Code' : 'Suspicious QR Code'),
                         style: AppTextStyles.headline3.copyWith(
                           color: statusColor,
                         ),
@@ -136,6 +191,24 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                         'Risk Score: ${riskScore.toStringAsFixed(0)}%',
                         style: AppTextStyles.body2.copyWith(color: statusColor),
                       ),
+                      if (qrType != null)
+                        Text(
+                          'Type: ${qrType.toUpperCase()}',
+                          style: AppTextStyles.body2.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (paymentMode != null)
+                        Text(
+                          isCollectRequest
+                              ? '🚨 Mode: COLLECT (Money OUT)'
+                              : 'Mode: PAY (Money Transfer)',
+                          style: AppTextStyles.body2.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -158,6 +231,64 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(explanation, style: AppTextStyles.body2),
+                // Show detected fraud types
+                if (result['detected_fraud_types'] != null &&
+                    (result['detected_fraud_types'] as List).isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '🚨 Detected Fraud Types:',
+                    style: AppTextStyles.body1.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: (result['detected_fraud_types'] as List)
+                        .map((type) => Chip(
+                              label: Text(
+                                type.toString().replaceAll('_', ' ').toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              backgroundColor: Colors.red.withOpacity(0.8),
+                              labelStyle: const TextStyle(color: Colors.white),
+                            ))
+                        .toList(),
+                  ),
+                ],
+                // Show fraud indicators
+                if (result['fraud_indicators'] != null &&
+                    (result['fraud_indicators'] as List).isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '⚠️ Warning Signs:',
+                    style: AppTextStyles.body1.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...(result['fraud_indicators'] as List).take(5).map((indicator) =>
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('• ', style: TextStyle(color: Colors.orange)),
+                            Expanded(
+                              child: Text(
+                                indicator.toString(),
+                                style: AppTextStyles.body2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                ],
               ],
             ),
           ),
