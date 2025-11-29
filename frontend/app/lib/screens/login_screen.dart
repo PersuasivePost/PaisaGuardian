@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/token_storage.dart';
 import '../theme/app_theme.dart';
 
 /// Login screen with Google OAuth
@@ -26,8 +27,15 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (success) {
-        // Navigate to dashboard on successful login
-        Navigator.of(context).pushReplacementNamed('/dashboard');
+        // Get the access token after successful login
+        final token = await TokenStorage.getAccessToken();
+
+        if (!mounted) return;
+
+        // Navigate to dashboard with token
+        Navigator.of(
+          context,
+        ).pushReplacementNamed('/dashboard', arguments: token ?? '');
       } else {
         setState(() {
           _errorMessage = 'Sign in failed. Please try again.';

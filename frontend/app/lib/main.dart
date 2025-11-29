@@ -25,6 +25,17 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/manual-token': (context) => const ManualTokenScreen(),
+        '/dashboard': (context) => DashboardScreen(jwtToken: ''),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/dashboard') {
+          // Handle dashboard route with token parameter
+          final token = settings.arguments as String? ?? '';
+          return MaterialPageRoute(
+            builder: (context) => DashboardScreen(jwtToken: token),
+          );
+        }
+        return null;
       },
     );
   }
