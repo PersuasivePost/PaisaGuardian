@@ -1,117 +1,109 @@
-# 🧠 Fraud Sentinel Agent  
-### An Agentic AI & Blockchain Solution for Proactive Payment Security  
-**Event:** MumbaiHacks 2025 | FinTech Track  
-**Team:** Sometimes  
-**Built by:** Ashvatth Joshi & Jatin Vora  
+# Fraud Sentinel Agent
+
+**An Agentic AI Solution for Proactive Payment Security**
+
+MumbaiHacks 2025 | FinTech Track  
+Team Sometimes — Ashvatth Joshi & Jatin Vora
 
 ---
 
-## 🚨 Overview
+## Overview
 
-**Fraud Sentinel Agent** is an **autonomous AI system** that proactively detects and prevents fraudulent transactions.  
-It monitors real-time payment activity, analyzes risk patterns, and pauses suspicious payments before they complete — combining **Agentic AI** with **Blockchain verification** for trust and transparency.
-
----
-
-## ⚠️ The Problem
-
-India’s digital payment ecosystem faces a surge in fraud:
-- 💸 **85% increase** in UPI-related frauds in FY 2023–24.  
-- 🔐 **22 lakh+ cybersecurity incidents** reported in 2024.  
-- ⚠️ Existing systems are **reactive** — users lose funds first, then report later.  
-
-Fraud Sentinel aims to **shift from detection to prevention**, providing real-time, self-learning protection.
+Fraud Sentinel Agent is an autonomous AI system that proactively detects and prevents fraudulent transactions. It monitors real-time payment activity, analyzes SMS messages, URLs, QR codes, and transactions using a 5-layer Agentic AI architecture with Google Gemini AI integration.
 
 ---
 
-## 💡 The Solution
+## Problem Statement
 
-Fraud Sentinel acts as an **autonomous guardian** that continuously observes transactions and makes intelligent decisions on the fly.
-
-### 🔁 Agentic Loop
-1. **Perceive:** Monitors live payment channels (UPI/API/webhooks).  
-2. **Reason:** Generates a real-time **risk score** using behavioral data.  
-3. **Act:** Automatically **pauses** high-risk transactions and alerts the user.  
-4. **Learn:** Adapts based on user feedback (“Approve” / “Block”).  
-
-Result: a proactive, self-improving fraud prevention layer.
+India's digital payment ecosystem faces a surge in fraud with an 85% increase in UPI-related frauds in FY 2023–24 and over 22 lakh cybersecurity incidents reported in 2024. Existing systems are reactive—users lose funds first, then report later. Fraud Sentinel shifts from detection to prevention with real-time, self-learning protection.
 
 ---
 
-## 🔐 The Core Innovation — Agentic AI × Blockchain
+## Architecture
 
-### 🧠 Agentic AI (Decision Layer)
-- Runs on **Supabase Edge Functions** (Node.js / Deno).  
-- Executes real-time logic at the edge for instant decision-making.  
-- Operates autonomously — no central dependency or human delay.
+### 5-Layer Agentic System
 
-### ⛓️ Blockchain (Trust Layer)
-- Uses **Ethers.js** and **Ethereum (Sepolia Testnet)**.  
-- Records verified fraud events immutably on-chain.  
-- Forms a **Decentralized Fraud Intelligence Network (DFIN)** for shared, tamper-proof fraud data.
+| Layer | Component    | Function                                     |
+| ----- | ------------ | -------------------------------------------- |
+| 1     | Agent Policy | Goal-driven decisions (PREVENT_FRAUD)        |
+| 2     | Perception   | Data capturing (URLs, SMS, QR, Transactions) |
+| 3     | Reasoning    | AI Brain (ML + NLP + Gemini AI)              |
+| 4     | Action       | Autonomous control (ALLOW/WARN/BLOCK)        |
+| 5     | Learning     | Feedback loop adaptation                     |
 
-Together, these create a transparent, verifiable defense system for digital payments.
+### Risk Classification
 
----
-
-## ⚙️ Tech Stack
-
-| Layer | Technology | Purpose |
-|--------|-------------|----------|
-| **Frontend** | React.js + TypeScript + TailwindCSS + Zustand | Real-time dashboard & alerts |
-| **Backend** | NestJS (Node.js) + Express | API orchestration & logic |
-| **Database & Auth** | Supabase (PostgreSQL + Auth) | User accounts & fraud logs |
-| **Agentic Core** | Supabase Edge Functions (Node.js/Deno) | Fraud detection engine |
-| **Blockchain Layer** | Ethers.js + Solidity (Sepolia) | Immutable fraud registry |
-| **DevOps / Infra** | Docker + Docker Compose | Containerized deployment |
-| **Cloud & Monitoring** | AWS (S3, Lambda planned), Prometheus + Grafana (future) | Scalability & observability |
-| **Automation / Alerts** | WebSockets + Resend (Email) | Real-time notifications |
-| **AI/ML Extension (Planned)** | Python + Flask | Anomaly-based learning |
+| Score | Level    | Action                |
+| ----- | -------- | --------------------- |
+| 0-39  | LOW      | Allow with monitoring |
+| 40-69 | MEDIUM   | Show warning          |
+| 70-99 | HIGH     | Block automatically   |
+| 100+  | CRITICAL | Emergency block       |
 
 ---
 
-## 🚀 Hackathon MVP Goals
+## Tech Stack
 
-1. **User Onboarding:** Secure auth via Supabase.  
-2. **Transaction Simulation:** Dashboard for mock payments.  
-3. **Live Agent:** Edge Function running real-time risk analysis.  
-4. **Alerts:** Instant “paused transaction” notifications.  
-5. **On-Chain Proof:** Log confirmed frauds to Sepolia testnet.  
-
----
-
-## 🧩 Architecture Overview
-
-User (Frontend)
-↓
-Supabase Edge Function (Agent)
-↓
-Risk Evaluation → Pause/Approve
-↓
-Blockchain (Ethers.js + Ethereum)
-↓
-Immutable Fraud Record
-
+| Component     | Technology                 |
+| ------------- | -------------------------- |
+| Mobile App    | Flutter + Dart             |
+| Backend Logic | Python + FastAPI           |
+| Auth Service  | Node.js + Express + Prisma |
+| AI/ML         | Google Gemini Pro          |
+| Database      | SQLite + PostgreSQL        |
 
 ---
 
-## 📈 Future Scope
+## Features
 
-- Integrate ML models for adaptive risk prediction.  
-- Expand DFIN for multi-bank participation.  
-- Add mobile (Flutter) app support.  
-- Multi-chain compatibility (Polygon, Base, Solana).  
+- **SMS Fraud Detection:** Real-time monitoring, fake KYC scam detection, phishing link identification
+- **URL Analysis:** Domain verification, SSL validation, typosquatting detection, redirect chain analysis
+- **QR Code Scanning:** UPI intent parsing, malicious QR detection
+- **Transaction Monitoring:** New payee detection, unusual amount flagging, behavioral analysis
 
 ---
 
-## 🏁 Outcome
+## API Endpoints
 
-✅ Real-time fraud prevention  
-✅ Blockchain-verified intelligence  
-✅ Serverless, scalable infrastructure  
-✅ End-to-end working MVP  
+| Endpoint               | Method | Description                     |
+| ---------------------- | ------ | ------------------------------- |
+| `/analyze/url`         | POST   | Analyze URL for phishing/fraud  |
+| `/analyze/sms`         | POST   | Analyze SMS for scam indicators |
+| `/analyze/transaction` | POST   | Analyze payment transaction     |
+| `/analyze/qr`          | POST   | Analyze QR code content         |
+| `/feedback`            | POST   | Submit user feedback            |
+| `/report/fraud`        | POST   | Report confirmed fraud          |
+| `/dashboard/stats`     | GET    | Get detection statistics        |
 
-> **From detection to prevention — Fraud Sentinel makes digital payments truly secure.**
+---
+
+## Quick Start
+
+**Prerequisites:** Python 3.9+, Node.js 18+, Flutter 3.0+
+
+```bash
+# Auth Service
+cd backend/auth && npm install && npx prisma generate && node server.js
+
+# Logic Service
+cd backend/logic && pip install -r requirements.txt && python main.py
+
+# Mobile App
+cd frontend/app && flutter pub get && flutter run
+```
+
+**Environment Variables:**
+
+Create `.env` files in `backend/logic/` and `backend/auth/` with API keys for Gemini AI and Google OAuth.
+
+---
+
+## Outcome
+
+- Real-time fraud prevention with 5-layer agentic architecture
+- Google Gemini AI-powered intelligent analysis
+- Self-learning system that adapts from user feedback
+- Cross-platform mobile app with SMS monitoring
 
 ---
 
