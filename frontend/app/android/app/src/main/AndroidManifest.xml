@@ -18,7 +18,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     
     <application
-        android:label="app"
+        android:label="Paisa Guardian"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

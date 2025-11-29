@@ -42,6 +42,25 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// Build logo widget with fallback to icon
+  Widget _buildLogo() {
+    // Try to load custom logo, fallback to icon if not found
+    return Image.asset(
+      'assets/images/logo.png',
+      width: 120,
+      height: 120,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        // Fallback to icon if logo image not found
+        return const Icon(
+          Icons.shield_outlined,
+          size: 64,
+          color: AppTheme.goldAccent,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,17 +92,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.white.withOpacity(0.1),
                       border: Border.all(color: AppTheme.goldAccent, width: 3),
                     ),
-                    child: const Icon(
-                      Icons.shield_outlined,
-                      size: 64,
-                      color: AppTheme.goldAccent,
-                    ),
+                    child: ClipOval(child: _buildLogo()),
                   ),
                   const SizedBox(height: 32),
 
                   // App Title
                   Text(
-                    'Fraud Sentinel',
+                    'PaisaGuardian',
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,

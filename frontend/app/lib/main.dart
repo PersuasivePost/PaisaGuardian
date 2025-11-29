@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Fraud Sentinel',
+      title: 'PaisaGuardian',
       theme: royalDarkTheme,
       home: const AuthGate(),
       routes: {

@@ -159,7 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         title: Text(
-          'Fraud Sentinel',
+          'PaisaGuardian',
           style: AppTextStyles.headline2.copyWith(
             color: AppColors.secondary,
             fontSize: 20,

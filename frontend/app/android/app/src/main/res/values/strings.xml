@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Fraud Sentinel</string>
+    <string name="app_name">PaisaGuardian</string>
     
     <!-- Web OAuth Client ID from Google Cloud Console -->
     <string name="default_web_client_id">783551040760-t5jvr87j1haef13j748ttoilce8n5er3.apps.googleusercontent.com</string>

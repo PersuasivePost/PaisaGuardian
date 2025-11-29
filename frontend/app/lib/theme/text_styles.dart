@@ -39,7 +39,7 @@ class AppTextStyles {
 
   // Buttons: Poppins SemiBold
   static TextStyle button = GoogleFonts.poppins(
-    color: AppColors.primary,
+    color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w600,
   );

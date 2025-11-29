@@ -96,7 +96,7 @@ class PermissionService {
       context,
       title: 'Camera Permission',
       message:
-          'Allow Fraud Sentinel to access your camera to scan QR codes and detect fraudulent payment links.',
+          'Allow PaisaGuardian to access your camera to scan QR codes and detect fraudulent payment links.',
       onRequest: () async {
         await Permission.camera.request();
       },
@@ -123,7 +123,7 @@ class PermissionService {
       context,
       title: 'SMS Protection',
       message:
-          'Allow Fraud Sentinel to read SMS messages to automatically detect and warn you about potential scams.',
+          'Allow PaisaGuardian to read SMS messages to automatically detect and warn you about potential scams.',
       onRequest: () async {
         await requestSmsPermissions();
       },
