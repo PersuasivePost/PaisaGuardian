@@ -4,6 +4,7 @@
   "main": "a.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "node server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -13,13 +14,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/client": "^7.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "zoogle": "^1.0.3",
-    "jsonwebtoken": "^9.0.0",
     "express-session": "^1.17.3",
-    "cors": "^2.8.5",
+    "jsonwebtoken": "^9.0.0",
     "prisma": "^7.0.0",
-    "@prisma/client": "^7.0.0"
+    "zoogle": "^1.0.3"
   }
 }
