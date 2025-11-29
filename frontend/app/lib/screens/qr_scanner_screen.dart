@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../theme/colors.dart';
@@ -16,20 +16,10 @@ class QRScannerScreen extends StatefulWidget {
 }
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
+  final MobileScannerController controller = MobileScannerController();
   String? scannedData;
   bool isAnalyzing = false;
   Map<String, dynamic>? analysisResult;
-
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (controller != null) {
-      controller!.pauseCamera();
-      controller!.resumeCamera();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,16 +34,19 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             flex: 4,
             child: Stack(
               children: [
-                QRView(
-                  key: qrKey,
-                  onQRViewCreated: _onQRViewCreated,
-                  overlay: QrScannerOverlayShape(
-                    borderColor: AppColors.secondary,
-                    borderRadius: 12,
-                    borderLength: 30,
-                    borderWidth: 8,
-                    cutOutSize: 250,
-                  ),
+                MobileScanner(
+                  controller: controller,
+                  onDetect: (capture) {
+                    final List<Barcode> barcodes = capture.barcodes;
+                    if (barcodes.isNotEmpty &&
+                        !isAnalyzing &&
+                        analysisResult == null) {
+                      final String? code = barcodes.first.rawValue;
+                      if (code != null) {
+                        _handleQRCode(code);
+                      }
+                    }
+                  },
                 ),
                 if (isAnalyzing)
                   Container(
@@ -187,19 +180,16 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     );
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) async {
-      if (isAnalyzing || analysisResult != null) return;
+  void _handleQRCode(String code) async {
+    if (isAnalyzing || analysisResult != null) return;
 
-      setState(() {
-        scannedData = scanData.code;
-        isAnalyzing = true;
-      });
-
-      await controller.pauseCamera();
-      await _analyzeQRCode(scanData.code ?? '');
+    setState(() {
+      scannedData = code;
+      isAnalyzing = true;
     });
+
+    await controller.stop();
+    await _analyzeQRCode(code);
   }
 
   Future<void> _analyzeQRCode(String qrData) async {
@@ -234,7 +224,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         );
       }
 
-      await controller?.resumeCamera();
+      await controller.start();
     }
   }
 
@@ -243,12 +233,12 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       analysisResult = null;
       scannedData = null;
     });
-    controller?.resumeCamera();
+    controller.start();
   }
 
   @override
   void dispose() {
-    controller?.dispose();
+    controller.dispose();
     super.dispose();
   }
 }

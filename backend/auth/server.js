@@ -210,6 +210,110 @@ app.get("/auth/.well-known/jwks.json", (req, res) => {
 app.use("/auth/google", zoogle.routes);
 app.get("/auth/google", (req, res) => res.redirect("/auth/google/login"));
 
+// Google ID token verification endpoint for mobile app
+app.post("/auth/google/verify", async (req, res) => {
+  try {
+    const { idToken, email, name, picture } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ error: "idToken required" });
+    }
+
+    // Verify the Google ID token
+    const { OAuth2Client } = require("google-auth-library");
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({
+        idToken: idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+    } catch (verifyError) {
+      console.error("ID token verification failed:", verifyError.message);
+      return res.status(401).json({ error: "Invalid ID token" });
+    }
+
+    const payload = ticket.getPayload();
+    const googleUserId = payload["sub"];
+
+    // Create/update user
+    const appUser = {
+      provider: "google",
+      providerId: googleUserId,
+      email: email || payload["email"],
+      name: name || payload["name"],
+      picture: picture || payload["picture"],
+    };
+
+    let user;
+    if (!prisma) {
+      // No DB: return a minimal user object
+      user = {
+        id: appUser.providerId,
+        email: appUser.email,
+        name: appUser.name,
+      };
+    } else {
+      // Persist with Prisma
+      user = await prisma.user.upsert({
+        where: { providerId: appUser.providerId },
+        update: {
+          email: appUser.email,
+          name: appUser.name,
+          picture: appUser.picture,
+        },
+        create: appUser,
+      });
+    }
+
+    // Create access token
+    const tokenPayload = {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      permissions: user.permissions || [],
+    };
+
+    const accessToken = jwt.sign(tokenPayload, privateKeyPem, {
+      algorithm: "RS256",
+      expiresIn: "24h",
+      keyid: JWKS_KID,
+    });
+
+    // Create refresh token
+    const refreshTokenValue = crypto.randomBytes(48).toString("hex");
+    const refreshExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+    if (prisma) {
+      try {
+        await prisma.refreshToken.create({
+          data: {
+            token: refreshTokenValue,
+            userId: user.id,
+            expiresAt: refreshExpires,
+          },
+        });
+      } catch (e) {
+        console.error("Failed to persist refresh token", e.message || e);
+      }
+    }
+
+    res.json({
+      accessToken,
+      refreshToken: refreshTokenValue,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+  } catch (error) {
+    console.error("Google verify error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Verify token endpoint
 app.post("/auth/verify", (req, res) => {
   const { token } = req.body;

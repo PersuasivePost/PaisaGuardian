@@ -41,7 +41,7 @@ dependencies:
   url_launcher: ^6.1.0
   permission_handler: ^11.0.1
   flutter_local_notifications: ^17.2.3
-  qr_code_scanner: ^1.0.1
+  mobile_scanner: ^5.2.3
   camera: ^0.10.5
   image_picker: ^1.0.4
   connectivity_plus: ^5.0.1

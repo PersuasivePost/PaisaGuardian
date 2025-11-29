@@ -1,36 +1,86 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_sign_in/google_sign_in.dart';
 import 'token_storage.dart';
 
 /// Authentication service for Google OAuth flow
 class AuthService {
-  static const String _authServerUrl = 'http://localhost:3000';
+  // Use 10.0.2.2 for Android emulator to reach localhost on the host machine
+  static const String _authServerUrl = 'http://10.0.2.2:3000';
 
-  /// Sign in with Google OAuth
-  /// TODO: Implement WebView-based OAuth flow
+  /// Sign in with Google OAuth using WebView
   static Future<bool> signInWithGoogle() async {
     try {
-      // OAuth URL
-      final oauthUrl = '$_authServerUrl/auth/google';
+      // Import will be added at the top
+      // For now, we need to use google_sign_in package instead of WebView
+      // because WebView-based OAuth has complications on mobile
 
-      // Note: This is a simplified implementation
-      // In a real app, you would:
-      // 1. Open WebView with OAuth URL
-      // 2. Listen for redirect to callback URL
-      // 3. Extract token from URL hash (#token=xxx)
-      // 4. Save token to secure storage
+      // Using google_sign_in package for native Google Sign-In
+      // IMPORTANT: The serverClientId is the Web Client ID from Google Cloud Console
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+        serverClientId: '783551040760-t5jvr87j1haef13j748ttoilce8n5er3.apps.googleusercontent.com',
+      );
 
-      // For now, return false and show instructions
-      debugPrint('OAuth Flow:');
-      debugPrint('1. Open browser to: $oauthUrl');
-      debugPrint('2. Complete Google sign-in');
-      debugPrint('3. You will be redirected with token');
-      debugPrint('4. Extract token from URL hash and save');
+      // Sign out first to ensure clean state
+      await googleSignIn.signOut();
 
-      // TODO: Implement full WebView flow using webview_flutter package
-      // This is a placeholder that will be completed
-      return false;
+      // Trigger Google Sign-In
+      final GoogleSignInAccount? account = await googleSignIn.signIn();
+
+      if (account == null) {
+        debugPrint('Google Sign-In cancelled by user');
+        return false;
+      }
+
+      // Get authentication details
+      final GoogleSignInAuthentication auth = await account.authentication;
+      final String? idToken = auth.idToken;
+
+      if (idToken == null) {
+        debugPrint('Failed to get ID token from Google');
+        return false;
+      }
+
+      // Send the ID token to our auth server for verification
+      final response = await http.post(
+        Uri.parse('$_authServerUrl/auth/google/verify'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'idToken': idToken,
+          'email': account.email,
+          'name': account.displayName,
+          'picture': account.photoUrl,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Save tokens and user info
+        await TokenStorage.saveAccessToken(data['accessToken']);
+        if (data['refreshToken'] != null) {
+          await TokenStorage.saveRefreshToken(data['refreshToken']);
+        }
+
+        await TokenStorage.saveUserInfo(
+          userId: data['user']['id']?.toString(),
+          email: account.email,
+          name: account.displayName,
+        );
+
+        // Calculate expiry (24 hours from now)
+        final expiry = DateTime.now().add(const Duration(hours: 24));
+        await TokenStorage.saveTokenExpiry(expiry);
+
+        debugPrint('Google Sign-In successful');
+        return true;
+      } else {
+        debugPrint('Auth server returned error: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
+        return false;
+      }
     } catch (e) {
       debugPrint('Sign in error: $e');
       return false;
