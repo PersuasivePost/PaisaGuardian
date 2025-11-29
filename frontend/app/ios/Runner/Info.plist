@@ -45,5 +45,18 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>anydesk</string>
+		<string>teamviewer</string>
+		<string>chromeremotedesktop</string>
+		<string>msrdp</string>
+		<string>vnc</string>
+		<string>splashtop</string>
+		<string>logmein</string>
+		<string>remotepc</string>
+		<string>zohoassist</string>
+		<string>supremo</string>
+	</array>
 </dict>
 </plist>

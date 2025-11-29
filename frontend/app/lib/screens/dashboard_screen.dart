@@ -5,6 +5,8 @@ import '../services/storage_service.dart';
 import '../services/jwt_helper.dart';
 import '../services/permission_service.dart';
 import '../services/token_storage.dart';
+import '../services/remote_access_detector.dart';
+import '../services/notification_service.dart';
 import 'url_analysis_screen.dart';
 import 'sms_analysis_screen.dart';
 import 'transaction_analysis_screen.dart';
@@ -12,6 +14,7 @@ import 'qr_scanner_screen.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/action_card.dart';
 import '../widgets/alert_list_item.dart';
+import '../widgets/remote_access_warning.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String jwtToken; // Now required
@@ -35,11 +38,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _blocked = 0;
   int _threats = 0;
   bool _isProtected = true;
+  RemoteAccessDetectionResult? _remoteAccessDetection;
+  bool _showRemoteAccessWarning = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _startRemoteAccessMonitoring();
+  }
+
+  Future<void> _startRemoteAccessMonitoring() async {
+    // Initial check
+    await _checkRemoteAccess();
+    
+    // Periodic monitoring every 30 seconds
+    Future.delayed(const Duration(seconds: 30), () {
+      if (mounted) {
+        _checkRemoteAccess();
+        _startRemoteAccessMonitoring();
+      }
+    });
+  }
+
+  Future<void> _checkRemoteAccess() async {
+    final detection = await RemoteAccessDetector.detectRemoteAccessApps();
+    if (mounted) {
+      final wasDetectedBefore = _remoteAccessDetection?.isDetected ?? false;
+      final isDetectedNow = detection.isDetected;
+      
+      setState(() {
+        _remoteAccessDetection = detection;
+        if (detection.isDetected) {
+          _showRemoteAccessWarning = true;
+        }
+      });
+      
+      // Send notification if this is a NEW detection (not previously detected)
+      if (isDetectedNow && !wasDetectedBefore) {
+        await NotificationService.showRemoteAccessAlert(
+          appName: detection.detectedApps.first,
+          detectedApps: detection.detectedApps,
+        );
+      }
+      
+      // Store alert if remote access detected and not already stored
+      if (detection.isDetected) {
+        await StorageService.addAlert({
+          'id': 'remote_access_${DateTime.now().millisecondsSinceEpoch}',
+          'type': 'security',
+          'title': '🚨 CRITICAL: Remote Access Detected',
+          'summary': 'Detected: ${detection.detectedApps.join(", ")}',
+          'payload': detection.toJson(),
+        });
+        await _loadData(); // Reload to show new alert
+      }
+    }
   }
 
   Future<void> _loadData() async {
@@ -123,12 +177,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: CustomScrollView(
         slivers: [
           _buildAppBar(),
+          // Remote Access Banner at top
+          if (_remoteAccessDetection != null && _remoteAccessDetection!.isDetected)
+            SliverToBoxAdapter(
+              child: RemoteAccessBanner(
+                detection: _remoteAccessDetection!,
+                onTap: () {
+                  setState(() {
+                    _showRemoteAccessWarning = !_showRemoteAccessWarning;
+                  });
+                },
+              ),
+            ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Full Remote Access Warning
+                  if (_showRemoteAccessWarning && _remoteAccessDetection != null)
+                    RemoteAccessWarning(
+                      detection: _remoteAccessDetection!,
+                      onDismiss: () {
+                        setState(() {
+                          _showRemoteAccessWarning = false;
+                        });
+                      },
+                      onLearnMore: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('About Remote Access Fraud'),
+                            content: const SingleChildScrollView(
+                              child: Text(
+                                'Scammers often trick victims into installing remote access '
+                                'apps like AnyDesk or TeamViewer. Once installed, they:\n\n'
+                                '1. Gain full control of your device\n'
+                                '2. Access your banking apps\n'
+                                '3. Transfer money without your knowledge\n'
+                                '4. Steal personal information\n\n'
+                                'NEVER install remote access apps at someone\'s request, '
+                                'especially if they claim to be from a bank, government, '
+                                'or tech support.\n\n'
+                                'If you see this warning:\n'
+                                '• Close the remote access app immediately\n'
+                                '• Uninstall it from your device\n'
+                                '• Contact your bank if you shared any details\n'
+                                '• Report the scammer to authorities',
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Got It'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   _buildHeader(),
                   const SizedBox(height: 24),
                   _buildSecurityStats(),

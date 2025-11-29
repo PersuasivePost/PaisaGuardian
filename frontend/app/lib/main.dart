@@ -5,11 +5,23 @@ import 'screens/login_screen.dart';
 import 'screens/manual_token_screen.dart';
 import 'services/storage_service.dart';
 import 'services/token_storage.dart';
+import 'services/notification_service.dart';
+import 'services/permission_service.dart';
+import 'services/remote_access_monitoring_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Warm up local storage
+  
+  // Initialize services
   await StorageService.alertsCount();
+  await NotificationService.initialize();
+  
+  // Request notification permissions
+  await NotificationService.requestPermissions();
+  
+  // Start background monitoring for remote access apps
+  RemoteAccessMonitoringService.startMonitoring();
+  
   runApp(const MyApp());
 }
 

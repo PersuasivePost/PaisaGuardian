@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../services/token_storage.dart';
+import '../services/remote_access_detector.dart';
 import '../theme/colors.dart';
 import '../theme/text_styles.dart';
+import '../widgets/remote_access_warning.dart';
 
 class UrlAnalysisScreen extends StatefulWidget {
   final String baseUrl;
@@ -24,6 +26,22 @@ class _UrlAnalysisScreenState extends State<UrlAnalysisScreen> {
   bool _loading = false;
   String? _error;
   Map<String, dynamic>? _result;
+  RemoteAccessDetectionResult? _remoteAccessDetection;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkRemoteAccess();
+  }
+
+  Future<void> _checkRemoteAccess() async {
+    final detection = await RemoteAccessDetector.detectRemoteAccessApps();
+    if (mounted) {
+      setState(() {
+        _remoteAccessDetection = detection;
+      });
+    }
+  }
 
   Color _getRiskColor(String riskLevel) {
     switch (riskLevel.toLowerCase()) {
@@ -83,23 +101,31 @@ class _UrlAnalysisScreenState extends State<UrlAnalysisScreen> {
       appBar: AppBar(
         title: Text('URL Analysis', style: AppTextStyles.headline3),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(hintText: 'Enter URL'),
+      body: Column(
+        children: [
+          if (_remoteAccessDetection != null && _remoteAccessDetection!.isDetected)
+            RemoteAccessBanner(
+              detection: _remoteAccessDetection!,
+              onTap: () {},
             ),
-            SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _loading ? null : _run,
-              child: _loading ? CircularProgressIndicator() : Text('Analyze'),
-            ),
-            if (_error != null) ...[
-              SizedBox(height: 12),
-              Text(
-                'Error: ' + _error!,
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(hintText: 'Enter URL'),
+                  ),
+                  SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _loading ? null : _run,
+                    child: _loading ? CircularProgressIndicator() : Text('Analyze'),
+                  ),
+                  if (_error != null) ...[
+                    SizedBox(height: 12),
+                    Text(
+                      'Error: ' + _error!,
                 style: TextStyle(color: AppColors.error),
               ),
             ],
@@ -253,6 +279,8 @@ class _UrlAnalysisScreenState extends State<UrlAnalysisScreen> {
           ],
         ),
       ),
+    ),
+      ],
     );
   }
 }
