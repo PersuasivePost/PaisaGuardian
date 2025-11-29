@@ -2,10 +2,6 @@
 <resources>
     <string name="app_name">Fraud Sentinel</string>
     
-    <!-- 
-        TODO: Replace with your actual Web Client ID from Google Cloud Console
-        Get this from: https://console.cloud.google.com/apis/credentials
-        It should look like: 123456789-abcdefghijk.apps.googleusercontent.com
-    -->
-    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID_HERE.apps.googleusercontent.com</string>
+    <!-- Web OAuth Client ID from Google Cloud Console -->
+    <string name="default_web_client_id">783551040760-t5jvr87j1haef13j748ttoilce8n5er3.apps.googleusercontent.com</string>
 </resources>

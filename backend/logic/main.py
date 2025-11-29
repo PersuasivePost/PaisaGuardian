@@ -154,7 +154,8 @@ async def health_check():
         status="healthy" if auth_service_healthy else "degraded",
         services={
             "api": True,
-            "auth_service": auth_service_healthy
+            "auth_service": auth_service_healthy,
+            "gemini_ai": gemini_analyzer.enabled
         }
     )
 
