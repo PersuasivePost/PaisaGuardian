@@ -20,7 +20,8 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     super.key,
     required this.jwtToken, // Make it required
-    this.baseUrl = 'http://localhost:8000',
+    this.baseUrl =
+        'http://10.0.2.2:8000', // Android emulator uses 10.0.2.2 for host localhost
   });
 
   @override
@@ -45,6 +46,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final alerts = await StorageService.getAlerts();
     final payload = JwtHelper.parsePayload(widget.jwtToken);
 
+    // Get user name from TokenStorage as fallback
+    final storedName = await TokenStorage.getUserName();
+
     // Calculate stats
     int totalScans = alerts.length;
     int blocked = alerts.where((a) {
@@ -58,7 +62,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     setState(() {
       _alerts = alerts;
-      _name = payload?['name'] ?? payload?['given_name'] ?? 'Guardian';
+      // Try JWT payload first, then stored user name, then default to 'User'
+      _name =
+          payload?['name'] ?? payload?['given_name'] ?? storedName ?? 'User';
       _totalScans = totalScans;
       _blocked = blocked;
       _threats = threats;
@@ -158,12 +164,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ),
-        title: Text(
-          'PaisaGuardian',
-          style: AppTextStyles.headline2.copyWith(
-            color: AppColors.secondary,
-            fontSize: 20,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // App Logo
+            _buildAppLogo(),
+            const SizedBox(width: 8),
+            // App Name
+            Text(
+              'PaisaGuardian',
+              style: AppTextStyles.headline2.copyWith(
+                color: AppColors.secondary,
+                fontSize: 20,
+              ),
+            ),
+          ],
         ),
       ),
       actions: [
@@ -183,6 +198,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
           tooltip: 'Logout',
         ),
       ],
+    );
+  }
+
+  /// Build app logo widget with fallback to icon
+  Widget _buildAppLogo() {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.secondary.withOpacity(0.1),
+        border: Border.all(
+          color: AppColors.secondary.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: 32,
+          height: 32,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // Fallback to shield icon if logo not found
+            return Icon(
+              Icons.shield_outlined,
+              size: 20,
+              color: AppColors.secondary,
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -306,14 +353,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             fontSize: 18,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 1.5,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.65,
           children: [
             StatCard(
               title: 'Total Scans',
@@ -478,9 +525,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         } else if (type == 'transaction') {
           title = 'Transaction Analysis';
           subtitle = 'To: ${payload['payee'] ?? 'Unknown'}';
+        } else if (type == 'qr') {
+          title = 'QR Code Analysis';
+          subtitle = payload['qr_data'] as String? ?? 'QR Scan Result';
         } else {
-          title = 'Unknown Analysis';
-          subtitle = '';
+          // Fallback: try to determine from title
+          title = payload['title'] as String? ?? 'Analysis Result';
+          subtitle = 'Risk Score: ${riskScore.toStringAsFixed(0)}';
         }
 
         return Padding(
@@ -597,7 +648,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildQuickActions() {
-    final baseUrl = widget.baseUrl ?? 'http://localhost:8000';
+    final baseUrl = widget.baseUrl ?? 'http://10.0.2.2:8000';
     final jwt = widget.jwtToken;
 
     return Column(

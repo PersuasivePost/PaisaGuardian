@@ -29,12 +29,14 @@ class ApiService {
 
   /// Validate JWT token before API calls
   Future<String> _validateAndGetToken(String jwt) async {
-    if (jwt.isEmpty) {
-      throw ApiException(
-        401,
-        'No authentication token available',
-        isAuthError: true,
-      );
+    // If jwt is empty, try to get it from storage
+    String token = jwt;
+    if (token.isEmpty) {
+      final storedToken = await TokenStorage.getAccessToken();
+      if (storedToken == null || storedToken.isEmpty) {
+        throw ApiException(401, 'No auth token available', isAuthError: true);
+      }
+      token = storedToken;
     }
 
     // Check if token is expired
@@ -47,7 +49,7 @@ class ApiService {
       );
     }
 
-    return jwt;
+    return token;
   }
 
   /// Handle HTTP response and throw appropriate exceptions

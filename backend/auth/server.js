@@ -314,14 +314,42 @@ app.post("/auth/google/verify", async (req, res) => {
   }
 });
 
-// Verify token endpoint
+// Verify token endpoint - supports both body and Authorization header
 app.post("/auth/verify", (req, res) => {
-  const { token } = req.body;
-  if (!token) return res.status(400).json({ error: "token required" });
+  console.log("📝 /auth/verify called");
+  console.log("   Headers:", JSON.stringify(req.headers, null, 2));
+  console.log("   Body:", JSON.stringify(req.body, null, 2));
+
+  // Check Authorization header first, then body
+  const authHeader = req.headers.authorization || "";
+  const tokenFromHeader = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : null;
+  const token = tokenFromHeader || req.body.token;
+
+  console.log("   Token source:", tokenFromHeader ? "Header" : "Body");
+  console.log(
+    "   Token (first 20):",
+    token ? token.substring(0, 20) + "..." : "NONE"
+  );
+
+  if (!token) {
+    console.log("   ✗ No token provided");
+    return res.status(400).json({ error: "token required" });
+  }
+
   jwt.verify(token, publicKeyPem, { algorithms: ["RS256"] }, (err, decoded) => {
-    if (err)
+    if (err) {
+      console.log("   ✗ Token verification failed:", err.message);
       return res.status(401).json({ valid: false, error: "Invalid token" });
-    res.json({ valid: true, payload: decoded });
+    }
+    console.log("   ✓ Token verified for user:", decoded.sub);
+    res.json({
+      valid: true,
+      userId: decoded.sub,
+      email: decoded.email,
+      name: decoded.name,
+    });
   });
 });
 

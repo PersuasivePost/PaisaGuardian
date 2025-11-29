@@ -1,1 +1,84 @@
-[]
+[
+  {
+    "id": "c2090aa7-08f9-4d18-b98f-64fc472119d8",
+    "analysis_type": "url",
+    "entity": "scam.com",
+    "risk_level": "high",
+    "risk_score": 65.0,
+    "is_safe": false,
+    "fraud_indicators": [
+      "Non-HTTPS connection",
+      "\u26a0\ufe0f Typosquatting: Looks like 'paytm.com' (similarity: 85%)",
+      "\ud83e\udd16 AI: Explicitly fraudulent domain name (contains 'scam')",
+      "\ud83e\udd16 AI: No legitimate business or service would use 'scam' in its primary domain name",
+      "\ud83e\udd16 AI: Likely used to host various types of malicious content or perpetuate fraud due to its overt naming",
+      "Not using HTTPS"
+    ],
+    "user_id": "108325343637157792638",
+    "timestamp": "2025-11-29T04:35:28.097071",
+    "user_action": null
+  },
+  {
+    "id": "371951ae-dd0b-4bac-a685-85fc23429ec4",
+    "analysis_type": "url",
+    "entity": "gooogle.com",
+    "risk_level": "high",
+    "risk_score": 64.64,
+    "is_safe": false,
+    "fraud_indicators": [
+      "Non-HTTPS connection",
+      "\u26a0\ufe0f Typosquatting: Looks like 'paytm.com' (similarity: 85%)",
+      "\ud83e\udd16 AI: Typosquatting (added 'o' to google.com)",
+      "\ud83e\udd16 AI: Brand impersonation (targeting Google)",
+      "\ud83e\udd16 AI: High likelihood of hosting phishing content",
+      "\ud83e\udd16 AI: No legitimate association with the official Google brand",
+      "Not using HTTPS"
+    ],
+    "user_id": "108325343637157792638",
+    "timestamp": "2025-11-29T04:35:54.639152",
+    "user_action": null
+  },
+  {
+    "id": "5e15a229-6e87-448b-9d82-9f8cdf512b5e",
+    "analysis_type": "sms",
+    "entity": "berlin",
+    "risk_level": "critical",
+    "risk_score": 86.75,
+    "is_safe": false,
+    "fraud_indicators": [
+      "\ud83d\udea8 FAKE KYC SCAM DETECTED (Confidence: 40%)! Banks NEVER ask you to update KYC via SMS links. Visit your bank branch or official app directly. Red flags: urgency tactics",
+      "Contains 2 fraud-related keywords",
+      "Creates sense of urgency",
+      "\ud83e\udd16 AI: Direct mention of 'kyc' (Know Your Customer) update, a common theme in Indian financial scams.",
+      "\ud83e\udd16 AI: Use of 'urgent' to create a sense of panic and pressure the recipient into immediate action without critical thinking.",
+      "\ud83e\udd16 AI: Generic and non-descriptive sender ID ('berlin') which does not identify a legitimate financial institution or service provider.",
+      "\ud83e\udd16 AI: **Urgency & Threat:** The phrases 'urgent update needed!!' aggressively push for immediate action, implying negative consequences if not followed, a common social engineering tactic.",
+      "\ud83e\udd16 AI: **Suspicious Sender ID:** 'berlin' is an unusual and generic sender name for an official communication about a critical financial update. Legitimate institutions use registered alphanumeric sender IDs (e.g., 'HDFCBank', 'SBI', 'MyBank').",
+      "\ud83e\udd16 AI: **Lack of Detail:** The message provides no specific account information, link, or contact number, which is typical for an initial scam bait message designed to provoke a recipient's concern and prompt them to seek out a solution, potentially leading them to a malicious link or number later.",
+      "\ud83e\udd16 AI: **Unprofessional Punctuation:** The use of '!!' adds to the informal and aggressive tone, which is uncharacteristic of official bank or service communications."
+    ],
+    "user_id": "108325343637157792638",
+    "timestamp": "2025-11-29T04:36:50.731683",
+    "user_action": null
+  },
+  {
+    "id": "7e9e7e6f-beb6-4f65-ba88-7a93f8b1793e",
+    "analysis_type": "url",
+    "entity": "zoogle.com",
+    "risk_level": "high",
+    "risk_score": 64.1,
+    "is_safe": false,
+    "fraud_indicators": [
+      "Non-HTTPS connection",
+      "\u26a0\ufe0f Typosquatting: Looks like 'paytm.com' (similarity: 85%)",
+      "\ud83e\udd16 AI: Typosquatting/Look-alike domain (mimics 'google.com')",
+      "\ud83e\udd16 AI: High potential for brand impersonation",
+      "\ud83e\udd16 AI: Commonly used for deceptive content (e.g., fake login pages, malware distribution)",
+      "\ud83e\udd16 AI: Intentional misspelling designed to trick users",
+      "Not using HTTPS"
+    ],
+    "user_id": "108325343637157792638",
+    "timestamp": "2025-11-29T04:40:47.809047",
+    "user_action": null
+  }
+]

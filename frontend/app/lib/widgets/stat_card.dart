@@ -38,54 +38,54 @@ class StatCard extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: accentColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: accentColor, size: 24),
+                child: Icon(icon, color: accentColor, size: 18),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: accentColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: accentColor.withOpacity(0.3)),
                 ),
                 child: Text(
                   'Live',
                   style: AppTextStyles.body2.copyWith(
                     color: accentColor,
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           CountUpAnimation(
             endValue: value,
             textStyle: AppTextStyles.headline1.copyWith(
               color: accentColor,
-              fontSize: 36,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
           Text(
             title,
             style: AppTextStyles.body1.copyWith(
               color: AppColors.textSecondary,
-              fontSize: 14,
+              fontSize: 12,
             ),
           ),
           if (subtitle.isNotEmpty) ...[

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
+import '../services/token_storage.dart';
 import '../theme/colors.dart';
 import '../theme/text_styles.dart';
 
@@ -206,10 +207,34 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       await StorageService.addAlert({
         'timestamp': DateTime.now().toIso8601String(),
         'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'type': 'qr',
         'title': 'QR Code Analysis',
         'summary': result['explanation'] ?? result.toString(),
         'payload': result,
       });
+    } on ApiException catch (apiErr) {
+      // Handle auth errors - redirect to login
+      if (apiErr.isAuthError && mounted) {
+        await TokenStorage.clearAll();
+        if (mounted) {
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
+        }
+        return;
+      }
+      setState(() {
+        isAnalyzing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Analysis Error: ${apiErr.message}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         isAnalyzing = false;

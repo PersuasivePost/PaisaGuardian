@@ -99,6 +99,16 @@ class URLAnalysisResponse(BaseModel):
     risk_score: float = Field(..., ge=0, le=100, description="Risk score from 0-100")
     is_safe: bool
     fraud_indicators: List[str] = Field(default_factory=list)
+    detected_fraud_types: List[FraudType] = Field(default_factory=list)
+    recommendations: List[str] = Field(default_factory=list)
+    analysis_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    details: Optional[Dict] = Field(default_factory=dict)
+    
+    # Chrome extension specific response fields
+    qr_code_analysis: Optional[Dict] = None
+    domain_risk_factors: Optional[List[str]] = None
+    html_threats: Optional[List[str]] = None
+    redirect_risk: Optional[str] = None
 
 
 class FraudReportRequest(BaseModel):

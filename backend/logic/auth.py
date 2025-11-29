@@ -15,7 +15,7 @@ security = HTTPBearer()
 
 # Node.js auth server configuration
 AUTH_SERVER_URL = "http://localhost:3000"
-TOKEN_VERIFY_ENDPOINT = f"{AUTH_SERVER_URL}/api/auth/verify"
+TOKEN_VERIFY_ENDPOINT = f"{AUTH_SERVER_URL}/auth/verify"
 
 
 class TokenData:
@@ -42,6 +42,9 @@ async def verify_token_with_auth_server(token: str) -> Dict:
         HTTPException: If token is invalid or verification fails
     """
     try:
+        logger.info(f"Attempting to verify token with auth server: {TOKEN_VERIFY_ENDPOINT}")
+        logger.info(f"Token (first 20 chars): {token[:20]}...")
+        
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.post(
                 TOKEN_VERIFY_ENDPOINT,
@@ -51,19 +54,22 @@ async def verify_token_with_auth_server(token: str) -> Dict:
                 }
             )
             
+            logger.info(f"Auth server response status: {response.status_code}")
+            logger.info(f"Auth server response body: {response.text}")
+            
             if response.status_code == 200:
                 data = response.json()
-                logger.info(f"Token verified for user: {data.get('userId', 'unknown')}")
+                logger.info(f"✓ Token verified for user: {data.get('userId', 'unknown')}")
                 return data
             elif response.status_code == 401:
-                logger.warning("Invalid or expired token")
+                logger.warning(f"✗ Invalid or expired token. Response: {response.text}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid or expired token",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
             else:
-                logger.error(f"Auth server returned status {response.status_code}")
+                logger.error(f"✗ Auth server returned status {response.status_code}: {response.text}")
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail="Authentication service unavailable"
