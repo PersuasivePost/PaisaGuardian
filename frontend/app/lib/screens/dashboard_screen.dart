@@ -7,6 +7,7 @@ import '../services/permission_service.dart';
 import '../services/token_storage.dart';
 import '../services/remote_access_detector.dart';
 import '../services/notification_service.dart';
+import '../services/sms_monitor_service.dart';
 import 'url_analysis_screen.dart';
 import 'sms_analysis_screen.dart';
 import 'transaction_analysis_screen.dart';
@@ -40,18 +41,98 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isProtected = true;
   RemoteAccessDetectionResult? _remoteAccessDetection;
   bool _showRemoteAccessWarning = false;
+  bool _smsMonitoringActive = false;
+  bool _scanningAllSms = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
     _startRemoteAccessMonitoring();
+    _checkSmsMonitoring();
+  }
+
+  Future<void> _checkSmsMonitoring() async {
+    setState(() {
+      _smsMonitoringActive = SmsMonitorService.isMonitoring;
+    });
+  }
+
+  Future<void> _toggleSmsMonitoring() async {
+    if (_smsMonitoringActive) {
+      SmsMonitorService.stopMonitoring();
+    } else {
+      await SmsMonitorService.startMonitoring();
+    }
+    setState(() {
+      _smsMonitoringActive = SmsMonitorService.isMonitoring;
+    });
+  }
+
+  Future<void> _scanAllSms() async {
+    setState(() {
+      _scanningAllSms = true;
+    });
+
+    try {
+      final results = await SmsMonitorService.scanAllSms();
+
+      if (mounted) {
+        if (results.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ No suspicious SMS found in your inbox!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          // Store all risky SMS as alerts
+          for (final sms in results) {
+            await StorageService.addAlert({
+              'id':
+                  'sms_scan_${DateTime.now().millisecondsSinceEpoch}_${sms['sender']}',
+              'type': 'sms',
+              'title': '⚠️ Suspicious SMS Found',
+              'summary': 'From: ${sms['sender']} - Risk: ${sms['risk_level']}',
+              'payload': sms,
+              'timestamp': DateTime.now().toIso8601String(),
+            });
+          }
+
+          await _loadData();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '⚠️ Found ${results.length} suspicious SMS messages!',
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error scanning SMS: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _scanningAllSms = false;
+        });
+      }
+    }
   }
 
   Future<void> _startRemoteAccessMonitoring() async {
     // Initial check
     await _checkRemoteAccess();
-    
+
     // Periodic monitoring every 30 seconds
     Future.delayed(const Duration(seconds: 30), () {
       if (mounted) {
@@ -66,14 +147,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) {
       final wasDetectedBefore = _remoteAccessDetection?.isDetected ?? false;
       final isDetectedNow = detection.isDetected;
-      
+
       setState(() {
         _remoteAccessDetection = detection;
         if (detection.isDetected) {
           _showRemoteAccessWarning = true;
         }
       });
-      
+
       // Send notification if this is a NEW detection (not previously detected)
       if (isDetectedNow && !wasDetectedBefore) {
         await NotificationService.showRemoteAccessAlert(
@@ -81,7 +162,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           detectedApps: detection.detectedApps,
         );
       }
-      
+
       // Store alert if remote access detected and not already stored
       if (detection.isDetected) {
         await StorageService.addAlert({
@@ -178,7 +259,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         slivers: [
           _buildAppBar(),
           // Remote Access Banner at top
-          if (_remoteAccessDetection != null && _remoteAccessDetection!.isDetected)
+          if (_remoteAccessDetection != null &&
+              _remoteAccessDetection!.isDetected)
             SliverToBoxAdapter(
               child: RemoteAccessBanner(
                 detection: _remoteAccessDetection!,
@@ -196,7 +278,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Full Remote Access Warning
-                  if (_showRemoteAccessWarning && _remoteAccessDetection != null)
+                  if (_showRemoteAccessWarning &&
+                      _remoteAccessDetection != null)
                     RemoteAccessWarning(
                       detection: _remoteAccessDetection!,
                       onDismiss: () {
@@ -240,6 +323,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildHeader(),
                   const SizedBox(height: 24),
                   _buildSecurityStats(),
+                  const SizedBox(height: 16),
+                  _buildSmsMonitoringCard(),
                   const SizedBox(height: 24),
                   _buildQuickActions(),
                   const SizedBox(height: 24),
@@ -497,6 +582,118 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildSmsMonitoringCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _smsMonitoringActive
+              ? AppColors.success.withOpacity(0.3)
+              : AppColors.secondary.withOpacity(0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _smsMonitoringActive
+                      ? AppColors.success.withOpacity(0.1)
+                      : AppColors.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.message_outlined,
+                  color: _smsMonitoringActive
+                      ? AppColors.success
+                      : AppColors.secondary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SMS Fraud Monitor',
+                      style: AppTextStyles.headline3.copyWith(
+                        color: AppColors.text,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _smsMonitoringActive
+                          ? '🟢 Active - Watching for fraud SMS'
+                          : '🔴 Inactive - Tap to enable',
+                      style: AppTextStyles.body2.copyWith(
+                        color: _smsMonitoringActive
+                            ? AppColors.success
+                            : AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _smsMonitoringActive,
+                onChanged: (value) => _toggleSmsMonitoring(),
+                activeColor: AppColors.success,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _scanningAllSms ? null : _scanAllSms,
+                  icon: _scanningAllSms
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.search, size: 18),
+                  label: Text(
+                    _scanningAllSms ? 'Scanning...' : 'Scan All SMS',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

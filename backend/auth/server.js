@@ -38,9 +38,33 @@ if (!privateKeyPem || !publicKeyPem) {
 
 app.use(express.json());
 app.use(cookieParser());
+
+// CORS configuration - allow requests from mobile apps and web
 app.use(
   cors({
-    origin: process.env.FRONTEND_ORIGIN || "http://localhost:8080",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, postman)
+      if (!origin) return callback(null, true);
+
+      // Allow localhost and local network for development
+      const allowedOrigins = [
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://10.0.2.2:8080",
+        "http://127.0.0.1:8080",
+      ];
+
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        origin.startsWith("http://192.168.") ||
+        origin.startsWith("http://10.")
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(null, true); // Allow all for now in development
+    },
     credentials: true,
   })
 );
@@ -424,10 +448,19 @@ app.post("/logout", (req, res) => {
 // Basic health route
 app.get("/", (req, res) => res.send("Auth server running"));
 
+// Health check endpoint
+app.get("/health", (req, res) =>
+  res
+    .status(200)
+    .json({ status: "healthy", timestamp: new Date().toISOString() })
+);
+
 // Error handler
 app.use((err, req, res, next) => {
   console.error("Unhandled error", err);
   res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(PORT, () => console.log(`Auth server listening on ${PORT}`));
+app.listen(PORT, "0.0.0.0", () =>
+  console.log(`Auth server listening on 0.0.0.0:${PORT}`)
+);

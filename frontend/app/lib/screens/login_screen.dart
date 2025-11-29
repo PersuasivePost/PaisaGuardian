@@ -38,15 +38,20 @@ class _LoginScreenState extends State<LoginScreen> {
         ).pushReplacementNamed('/dashboard', arguments: token ?? '');
       } else {
         setState(() {
-          _errorMessage = 'Sign in failed. Please try again.';
+          _errorMessage =
+              'Sign in was cancelled or failed. Please try again.\n\nTip: Make sure you have internet connection.';
           _isLoading = false;
         });
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error: ${e.toString()}';
-        _isLoading = false;
-      });
+      debugPrint('Login error: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage =
+              'Sign in error: ${e.toString().split('\n').first}\n\nThe app will use temporary authentication if backend is unavailable.';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -207,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _isLoading ? null : _handleGoogleSignIn,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
-                        foregroundColor: AppTheme.primaryColor,
+                        foregroundColor: AppTheme.textPrimaryColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -215,13 +220,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         shadowColor: AppTheme.goldAccent.withOpacity(0.5),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 24,
                               height: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppTheme.primaryColor,
+                                  AppTheme.textPrimaryColor,
                                 ),
                               ),
                             )

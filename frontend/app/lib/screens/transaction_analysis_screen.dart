@@ -45,14 +45,14 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
       _remoteAccessDetection = detection;
       _showRemoteAccessWarning = detection.isDetected;
     });
-    
+
     // Send notification and store alert if remote access detected
     if (detection.isDetected) {
       await NotificationService.showRemoteAccessAlert(
         appName: detection.detectedApps.first,
         detectedApps: detection.detectedApps,
       );
-      
+
       await StorageService.addAlert({
         'id': DateTime.now().millisecondsSinceEpoch.toString(),
         'type': 'security',
@@ -146,7 +146,8 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
                 child: Column(
                   children: [
                     // Full Remote Access Warning
-                    if (_showRemoteAccessWarning && _remoteAccessDetection != null)
+                    if (_showRemoteAccessWarning &&
+                        _remoteAccessDetection != null)
                       RemoteAccessWarning(
                         detection: _remoteAccessDetection!,
                         onDismiss: () {
@@ -198,8 +199,14 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
                       value: _type,
                       onChanged: (v) => setState(() => _type = v ?? _type),
                       items: [
-                        DropdownMenuItem(value: 'transfer', child: Text('Transfer')),
-                        DropdownMenuItem(value: 'payment', child: Text('Payment')),
+                        DropdownMenuItem(
+                          value: 'transfer',
+                          child: Text('Transfer'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'payment',
+                          child: Text('Payment'),
+                        ),
                         DropdownMenuItem(
                           value: 'withdrawal',
                           child: Text('Withdrawal'),
@@ -209,7 +216,9 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
                     SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: _loading ? null : _run,
-                      child: _loading ? CircularProgressIndicator() : Text('Analyze'),
+                      child: _loading
+                          ? CircularProgressIndicator()
+                          : Text('Analyze'),
                     ),
                     if (_error != null) ...[
                       SizedBox(height: 12),
@@ -225,7 +234,9 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
                         children: [
                           // Risk Level Card
                           Card(
-                            color: _getRiskColor(_result!['risk_level'] ?? 'low'),
+                            color: _getRiskColor(
+                              _result!['risk_level'] ?? 'low',
+                            ),
                             child: Padding(
                               padding: EdgeInsets.all(16),
                               child: Column(
@@ -258,113 +269,120 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
                             ),
                           ),
 
-                      // Fraud Indicators
-                      if (_result!['fraud_indicators'] != null &&
-                          (_result!['fraud_indicators'] as List)
-                              .isNotEmpty) ...[
-                        SizedBox(height: 16),
-                        Text(
-                          '⚠️ Fraud Indicators:',
-                          style: AppTextStyles.headline3,
-                        ),
-                        SizedBox(height: 8),
-                        ...(_result!['fraud_indicators'] as List)
-                            .map(
-                              (indicator) => Padding(
-                                padding: EdgeInsets.only(bottom: 4),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '• ',
-                                      style: TextStyle(color: AppColors.error),
+                          // Fraud Indicators
+                          if (_result!['fraud_indicators'] != null &&
+                              (_result!['fraud_indicators'] as List)
+                                  .isNotEmpty) ...[
+                            SizedBox(height: 16),
+                            Text(
+                              '⚠️ Fraud Indicators:',
+                              style: AppTextStyles.headline3,
+                            ),
+                            SizedBox(height: 8),
+                            ...(_result!['fraud_indicators'] as List)
+                                .map(
+                                  (indicator) => Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '• ',
+                                          style: TextStyle(
+                                            color: AppColors.error,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            indicator.toString(),
+                                            style: AppTextStyles.body2,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Expanded(
-                                      child: Text(
-                                        indicator.toString(),
-                                        style: AppTextStyles.body2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ],
-
-                      // Recommendations
-                      if (_result!['recommendations'] != null &&
-                          (_result!['recommendations'] as List).isNotEmpty) ...[
-                        SizedBox(height: 16),
-                        Text(
-                          '💡 Recommendations:',
-                          style: AppTextStyles.headline3,
-                        ),
-                        SizedBox(height: 8),
-                        ...(_result!['recommendations'] as List)
-                            .map(
-                              (rec) => Padding(
-                                padding: EdgeInsets.only(bottom: 4),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '• ',
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        rec.toString(),
-                                        style: AppTextStyles.body2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ],
-
-                      // Fraud Types
-                      if (_result!['detected_fraud_types'] != null &&
-                          (_result!['detected_fraud_types'] as List)
-                              .isNotEmpty) ...[
-                        SizedBox(height: 16),
-                        Text(
-                          '🚨 Detected Fraud Types:',
-                          style: AppTextStyles.headline3,
-                        ),
-                        SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: (_result!['detected_fraud_types'] as List)
-                              .map(
-                                (type) => Chip(
-                                  label: Text(
-                                    type
-                                        .toString()
-                                        .replaceAll('_', ' ')
-                                        .toUpperCase(),
-                                    style: TextStyle(fontSize: 10),
                                   ),
-                                  backgroundColor: AppColors.error.withOpacity(
-                                    0.2,
+                                )
+                                .toList(),
+                          ],
+
+                          // Recommendations
+                          if (_result!['recommendations'] != null &&
+                              (_result!['recommendations'] as List)
+                                  .isNotEmpty) ...[
+                            SizedBox(height: 16),
+                            Text(
+                              '💡 Recommendations:',
+                              style: AppTextStyles.headline3,
+                            ),
+                            SizedBox(height: 8),
+                            ...(_result!['recommendations'] as List)
+                                .map(
+                                  (rec) => Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '• ',
+                                          style: TextStyle(
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            rec.toString(),
+                                            style: AppTextStyles.body2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              )
-                          ),
-                        ),
-                      ],
-                    ),
+                                )
+                                .toList(),
+                          ],
+
+                          // Fraud Types
+                          if (_result!['detected_fraud_types'] != null &&
+                              (_result!['detected_fraud_types'] as List)
+                                  .isNotEmpty) ...[
+                            SizedBox(height: 16),
+                            Text(
+                              '🚨 Detected Fraud Types:',
+                              style: AppTextStyles.headline3,
+                            ),
+                            SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children:
+                                  (_result!['detected_fraud_types'] as List)
+                                      .map(
+                                        (type) => Chip(
+                                          label: Text(
+                                            type
+                                                .toString()
+                                                .replaceAll('_', ' ')
+                                                .toUpperCase(),
+                                            style: TextStyle(fontSize: 10),
+                                          ),
+                                          backgroundColor: AppColors.error
+                                              .withOpacity(0.2),
+                                        ),
+                                      )
+                                      .toList(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

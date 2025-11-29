@@ -8,20 +8,24 @@ import 'services/token_storage.dart';
 import 'services/notification_service.dart';
 import 'services/permission_service.dart';
 import 'services/remote_access_monitoring_service.dart';
+import 'services/sms_monitor_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize services
   await StorageService.alertsCount();
   await NotificationService.initialize();
-  
+
   // Request notification permissions
   await NotificationService.requestPermissions();
-  
+
   // Start background monitoring for remote access apps
   RemoteAccessMonitoringService.startMonitoring();
-  
+
+  // Start SMS fraud monitoring
+  await SmsMonitorService.startMonitoring();
+
   runApp(const MyApp());
 }
 
