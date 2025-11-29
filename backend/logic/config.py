@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     api_version: str = "1.0.0"
     api_description: str = "API for detecting fraudulent URLs, SMS messages, and UPI transactions"
     
+    # Google Gemini AI
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-pro"
+    gemini_enabled: bool = False
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

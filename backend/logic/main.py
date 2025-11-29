@@ -48,6 +48,7 @@ from risk_scoring import (
     analyze_fake_collect_request,
     analyze_fake_kyc_sms
 )
+from gemini_analyzer import gemini_analyzer
 
 # Import all 5 agentic layers
 from agent_policy import get_agent_goal, classify_and_act
@@ -325,6 +326,22 @@ async def analyze_url(
             risk_score += 40
             indicators.append(f"Possible typosquatting: similar to {request.similar_to_domain}")
         
+        # 🤖 GEMINI AI ANALYSIS (Enhanced Layer 3)
+        ai_risk_score = 0.0
+        ai_details = {}
+        if gemini_analyzer.enabled:
+            try:
+                ai_risk_score, ai_indicators, ai_details = gemini_analyzer.analyze_url(
+                    url=request.url,
+                    domain_details=request.domain_details.dict() if request.domain_details else None,
+                    html_content=request.html_content.dict() if request.html_content else None
+                )
+                risk_score += ai_risk_score * 0.3  # Weight AI score at 30%
+                indicators.extend(ai_indicators)
+                logger.info(f"🤖 Gemini AI detected risk: {ai_risk_score:.1f} for {request.url}")
+            except Exception as e:
+                logger.error(f"Gemini AI analysis failed: {str(e)}")
+        
         # 🟧 LAYER 3: COMPREHENSIVE REASONING
         reasoning_result = reasoning_engine.analyze_comprehensive(**reasoning_data)
         
@@ -382,7 +399,8 @@ async def analyze_url(
                 'learning_applied': agentic_result['learning_applied'],
                 'agent_action': action_resp['action'],
                 'should_block': action_resp['should_block'],
-                'chrome_actions': action_resp.get('chrome_actions')
+                'chrome_actions': action_resp.get('chrome_actions'),
+                **ai_details  # Include AI analysis details
             },
             qr_code_analysis=qr_analysis,
             domain_risk_factors=domain_risk_factors,
@@ -485,6 +503,20 @@ async def analyze_sms(
             upi_intent_risk = upi_details
             logger.info(f"UPI intent analyzed: risk +{upi_score}")
         
+        # 🤖 GEMINI AI ANALYSIS for SMS
+        ai_details = {}
+        if gemini_analyzer.enabled:
+            try:
+                ai_risk_score, ai_indicators, ai_details = gemini_analyzer.analyze_sms(
+                    message=request.message,
+                    sender=request.sender
+                )
+                risk_score += ai_risk_score * 0.25  # Weight AI at 25%
+                indicators.extend(ai_indicators)
+                logger.info(f"🤖 Gemini AI SMS risk: {ai_risk_score:.1f}")
+            except Exception as e:
+                logger.error(f"Gemini SMS analysis failed: {str(e)}")
+        
         # Cap risk score at 100
         risk_score = min(risk_score, 100)
         risk_level = get_risk_level(risk_score)
@@ -544,7 +576,7 @@ async def analyze_sms(
             extracted_upi_ids=upi_ids,
             extracted_phone_numbers=phone_numbers,
             recommendations=recommendations,
-            details=details,
+            details={**details, **ai_details},  # Include AI details
             device_security_alerts=device_security_alerts,
             upi_intent_risk=upi_intent_risk,
             sim_change_warning=sim_change_warning,
@@ -625,6 +657,23 @@ async def analyze_transaction(
                 risk_score = max(0, risk_score - 15)
                 details['trusted_payee'] = True
         
+        # 🤖 GEMINI AI ANALYSIS for Transactions
+        ai_details = {}
+        if gemini_analyzer.enabled:
+            try:
+                ai_risk_score, ai_indicators, ai_details = gemini_analyzer.analyze_transaction(
+                    amount=request.transaction.amount,
+                    recipient_upi=request.transaction.recipient_upi,
+                    recipient_name=request.transaction.recipient_name,
+                    note=request.transaction.transaction_note,
+                    is_new_payee=is_new_payee
+                )
+                risk_score += ai_risk_score * 0.25  # Weight AI at 25%
+                indicators.extend(ai_indicators)
+                logger.info(f"🤖 Gemini AI transaction risk: {ai_risk_score:.1f}")
+            except Exception as e:
+                logger.error(f"Gemini transaction analysis failed: {str(e)}")
+        
         risk_level = get_risk_level(risk_score)
         is_safe = risk_score < 50
         
@@ -689,7 +738,7 @@ async def analyze_transaction(
             recommendations=recommendations,
             similar_fraud_reports=0,  # In production, query fraud database
             recipient_trust_score=recipient_trust_score,
-            details=details
+            details={**details, **ai_details}  # Include AI details
         )
         
     except Exception as e:
