@@ -2,7 +2,9 @@
 Configuration management for the fraud detection API
 """
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Union
+from pydantic import field_validator
+import os
 
 
 class Settings(BaseSettings):
@@ -18,13 +20,13 @@ class Settings(BaseSettings):
     auth_server_url: str = "http://localhost:3000"
     auth_token_verify_endpoint: str = "/api/auth/verify"
     
-    # CORS
-    cors_origins: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "chrome-extension://*"
-    ]
+    # CORS - use string in env, parse to list
+    cors_origins_str: str = "http://localhost:3000,http://localhost:5173,http://localhost:8080,chrome-extension://*"
+    
+    @property
+    def cors_origins(self) -> List[str]:
+        """Parse CORS origins from comma-separated string"""
+        return [origin.strip() for origin in self.cors_origins_str.split(',')]
     
     # Logging
     log_level: str = "INFO"
@@ -36,12 +38,14 @@ class Settings(BaseSettings):
     
     # Google Gemini AI
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-pro"
+    gemini_model: str = "gemini-2.5-flash"
     gemini_enabled: bool = False
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": False,
+        "env_parse_none_str": "null"
+    }
 
 
 # Global settings instance

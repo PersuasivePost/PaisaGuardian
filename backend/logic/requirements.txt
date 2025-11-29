@@ -20,4 +20,4 @@ python-json-logger==2.0.7
 python-dateutil==2.8.2
 
 # Google Gemini AI
-google-generativeai==0.3.2
+google-generativeai>=0.8.0
